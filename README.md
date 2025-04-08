@@ -17,6 +17,7 @@ A decentralized blockchain-based charity platform using DAO (Decentralized Auton
 - npm or yarn
 - MetaMask browser extension
 - Git
+- Ganache (optional, for alternative local blockchain)
 
 ## Installation
 
@@ -44,6 +45,10 @@ A decentralized blockchain-based charity platform using DAO (Decentralized Auton
 
 ## Running the Application
 
+You can choose between two local blockchain options:
+
+### Option 1: Using Hardhat Network
+
 1. Start a local Hardhat node (in the main directory):
    ```bash
    npx hardhat node
@@ -54,17 +59,50 @@ A decentralized blockchain-based charity platform using DAO (Decentralized Auton
    npx hardhat run scripts/deploy.ts --network localhost
    ```
 
-3. Start the frontend application:
+3. Connect MetaMask to the Hardhat network:
+   - Network Name: Localhost 8545
+   - RPC URL: http://127.0.0.1:8545/
+   - Chain ID: 31337
+   - Currency Symbol: ETH
+
+### Option 2: Using Ganache
+
+1. Install and Start Ganache:
+   - Download Ganache from [https://trufflesuite.com/ganache/](https://trufflesuite.com/ganache/)
+   - Install and launch Ganache
+   - Create a new workspace (or quickstart)
+   - Note down the RPC Server address (usually http://127.0.0.1:7545)
+
+2. Configure the network in hardhat.config.ts:
+   ```typescript
+   networks: {
+     ganache: {
+       url: "http://127.0.0.1:7545",
+       accounts: { mnemonic: "your ganache mnemonic here" }
+     }
+   }
+   ```
+
+3. Deploy the contracts to Ganache:
+   ```bash
+   npx hardhat run scripts/deploy.ts --network ganache
+   ```
+
+4. Connect MetaMask to Ganache:
+   - Network Name: Ganache
+   - RPC URL: http://127.0.0.1:7545
+   - Chain ID: 1337
+   - Currency Symbol: ETH
+
+### Starting the Frontend
+
+1. Start the frontend application:
    ```bash
    cd charity-dao-frontend
    npm start
    ```
 
-4. Connect MetaMask to the local network:
-   - Network Name: Localhost 8545
-   - RPC URL: http://127.0.0.1:8545/
-   - Chain ID: 31337
-   - Currency Symbol: ETH
+2. The application will automatically connect to whichever network you've configured in MetaMask
 
 ## Using the Platform
 
@@ -126,6 +164,31 @@ This ensures transparency and permanent record-keeping of all platform activitie
 - Transparent voting and execution process
 - All transactions are permanently recorded on the blockchain
 
+## Troubleshooting
+
+### Common Issues with Local Networks
+
+1. **MetaMask Connection Issues**:
+   - Ensure you're using the correct RPC URL and Chain ID
+   - Reset your MetaMask account if you switch between networks
+   - Clear your browser cache if you experience persistent issues
+
+2. **Ganache-Specific Issues**:
+   - Make sure Ganache is running before deploying contracts
+   - Check if the mnemonic in your config matches Ganache's
+   - Verify the RPC server is accessible (no firewall blocking)
+
+3. **Hardhat Network Issues**:
+   - Ensure no other process is using port 8545
+   - Reset the Hardhat network if you encounter nonce issues
+   - Clear MetaMask transaction history if needed
+
+### Getting Test Ether
+
+- **For Hardhat**: The default accounts come pre-funded
+- **For Ganache**: Use the pre-funded accounts shown in the Ganache UI
+- Import the private keys from either network into MetaMask to access the funds
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
@@ -133,3 +196,45 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
+
+## Visual Guide
+
+### Platform Overview
+![Platform Overview](docs/images/platform-overview.png)
+*The main dashboard showing treasury status (0.0 ETH temporary holding, 5.31 ETH available for proposals), donation form, and active proposals*
+
+### Authentication & Wallet Connection
+![MetaMask Authentication](docs/images/authentication)
+*MetaMask authentication interface for secure wallet connection*
+
+![MetaMask Connection](docs/images/metamask-connection.png)
+*MetaMask wallet interface showing account balance and available actions*
+
+### Making Donations
+![Donation Form](docs/images/donation-form.png)
+*The donation form where users can enter amount and optional description*
+
+### IPFS Integration
+![Pinata Storage](docs/images/pinata-storage.png)
+*IPFS storage through Pinata showing metadata for votes, donations, approvals, and proposals*
+
+### Proposal Lifecycle
+
+#### 1. Pending Proposal
+![Pending Proposal](docs/images/proposal-pending.png)
+*A new proposal requesting 1.5 ETH for flood victims, showing 0/3 votes and pending status*
+
+#### 2. Approved Proposal
+![Approved Proposal](docs/images/proposal-approved.png)
+*An approved proposal "Slums' food" with 1.0 ETH requested and full voting approval (3/3)*
+
+#### 3. Executed Proposal
+![Executed Proposal](docs/images/proposal-executed.png)
+*A completed proposal showing executed status after receiving required votes*
+
+> Note: The platform features a modern, intuitive interface that guides users through:
+> - Making donations with optional descriptions
+> - Creating and voting on proposals
+> - Monitoring proposal status and voting progress
+> - Tracking treasury balances and fund allocation
+> - Connecting and managing their MetaMask wallet
