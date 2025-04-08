@@ -1,15 +1,17 @@
 require("@nomicfoundation/hardhat-toolbox");
-require("dotenv").config();
 
+/** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.28",
+  solidity: "0.8.20",
   networks: {
-    hardhat: {}, // Keep Hardhat for testing
     ganache: {
-      url: "http://127.0.0.1:7545", // Ganache default RPC URL
+      url: "http://127.0.0.1:7545",
       accounts: [
-        "0x4ad4f506cb5a75a0c7f3c873bfd69430e8d15a9ce6e02198ad832ac9ae6dd365",
-              ], // Replace with Ganache account private keys
-    },
-  },
-};
+        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", // Owner
+        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d", // Voter 1
+        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a", // Voter 2
+        "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"  // Voter 3
+      ]
+    }
+  }
+}; 
