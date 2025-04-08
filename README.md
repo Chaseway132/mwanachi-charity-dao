@@ -7,7 +7,7 @@ A decentralized blockchain-based charity platform using DAO (Decentralized Auton
 - **Smart Contract-Based Donations**: Secure and transparent donation handling
 - **DAO Governance**: Community-driven decision making for fund allocation
 - **IPFS Integration**: Decentralized storage for proposal and donation metadata
-- **Proposal System**: Create, vote on, and execute charitable proposals
+- **Proposal System**: Create, vote on, approve, and execute charitable proposals
 - **Treasury Management**: Transparent fund tracking and allocation
 - **Web3 Integration**: Seamless blockchain interaction through MetaMask
 
