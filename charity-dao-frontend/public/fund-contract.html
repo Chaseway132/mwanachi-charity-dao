@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fund Contract Tool</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #output {
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .info {
+      background-color: #e7f3fe;
+      border-left: 6px solid #2196F3;
+      padding: 10px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Fund Contract Tool</h1>
+  <div class="info">
+    <p>This tool helps you fund the FundAllocation contract with ETH so that proposals can be executed.</p>
+    <p>Current contract address: <span id="contractAddress">Loading...</span></p>
+    <p>Current balance: <span id="contractBalance">Loading...</span> ETH</p>
+  </div>
+
+  <div>
+    <label for="amount">Amount to send (ETH):</label>
+    <input type="number" id="amount" value="0.5" min="0.1" step="0.1">
+    <button id="fundButton">Fund Contract</button>
+  </div>
+
+  <div id="output">Logs will appear here...</div>
+
+  <script>
+    // Load the contract address from the environment
+    async function loadContractInfo() {
+      try {
+        // Import the contract address
+        const module = await import('../src/config/contracts.js');
+        const contractAddress = module.FUND_ALLOCATION;
+        document.getElementById('contractAddress').textContent = contractAddress;
+
+        // Check if MetaMask is available
+        if (typeof window.ethereum !== 'undefined') {
+          const provider = new ethers.BrowserProvider(window.ethereum);
+          const balance = await provider.getBalance(contractAddress);
+          document.getElementById('contractBalance').textContent = ethers.formatEther(balance);
+        } else {
+          document.getElementById('contractBalance').textContent = 'MetaMask not available';
+        }
+      } catch (error) {
+        console.error('Error loading contract info:', error);
+        document.getElementById('contractAddress').textContent = 'Error loading address';
+      }
+    }
+
+    // Function to log to the output div
+    function log(message) {
+      const output = document.getElementById('output');
+      output.textContent += message + '\n';
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // Function to fund the contract
+    async function fundContract() {
+      try {
+        log('Connecting to MetaMask...');
+
+        // Check if MetaMask is available
+        if (typeof window.ethereum === 'undefined') {
+          log('MetaMask is not installed!');
+          return;
+        }
+
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        log('Connected to MetaMask');
+
+        // Get the contract address
+        const module = await import('../src/config/contracts.js');
+        const contractAddress = module.FUND_ALLOCATION;
+        log(`Contract address: ${contractAddress}`);
+
+        // Get the provider and signer
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        log(`Using account: ${address}`);
+
+        // Get the amount to send
+        const amountInput = document.getElementById('amount');
+        const amount = ethers.parseEther(amountInput.value);
+        log(`Sending ${ethers.formatEther(amount)} ETH to contract`);
+
+        // Send the transaction
+        const tx = await signer.sendTransaction({
+          to: contractAddress,
+          value: amount
+        });
+        log(`Transaction sent: ${tx.hash}`);
+
+        // Wait for confirmation
+        log('Waiting for confirmation...');
+        const receipt = await tx.wait();
+        log(`Transaction confirmed in block: ${receipt.blockNumber}`);
+
+        // Check new balance
+        const newBalance = await provider.getBalance(contractAddress);
+        log(`New contract balance: ${ethers.formatEther(newBalance)} ETH`);
+        document.getElementById('contractBalance').textContent = ethers.formatEther(newBalance);
+
+        log('Funding complete!');
+      } catch (error) {
+        log(`Error: ${error.message}`);
+        console.error('Error funding contract:', error);
+      }
+    }
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load ethers.js v6
+      const script = document.createElement('script');
+      script.src = 'https://cdn.ethers.org/ethers-6.8.1.umd.min.js';
+      script.onload = loadContractInfo;
+      document.head.appendChild(script);
+
+      // Add event listener to the button
+      document.getElementById('fundButton').addEventListener('click', fundContract);
+    });
+  </script>
+</body>
+</html>

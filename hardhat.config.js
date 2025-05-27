@@ -6,11 +6,11 @@ module.exports = {
   networks: {
     ganache: {
       url: "http://127.0.0.1:7545",
+      chainId: 1337,
       accounts: [
-        "0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80", // Owner
-        "0x59c6995e998f97a5a0044966f0945389dc9e86dae88c7a8412f4603b6b78690d", // Voter 1
-        "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a", // Voter 2
-        "0x7c852118294e51e653712a81e05800f419141751be58f605c371e15141b007a6"  // Voter 3
+        "0xd45bfe5f2e591b0f14c6c106597270b29547b8e0dfc6fef186bce3df81dac2e9",
+        "0xb8805667126815d1419d895ef403e5e1832ca0485c2431bb9235c41277f4dbef",
+        "0xc980fc1f62ba16859289f5b344f4d0ca29eaa33d43fe4042fbe6848c08a9ebf2"
       ]
     }
   }

@@ -13,12 +13,35 @@ import {
   ProposalManagementABI_Interface,
   VotingGovernanceABI_Interface
 } from './abiUtils';
-import { getProvider } from './provider';
+import { getProvider as getEthersProvider } from './provider';
+
+// Export getProvider
+export const getProvider = getEthersProvider;
 
 // Get signer instance
 export const getSigner = async () => {
   const provider = getProvider();
   return await provider.getSigner();
+};
+
+// Helper function to get the ProposalManagement contract
+export const getProposalManagementContract = async (provider?: ethers.Provider) => {
+  const contractProvider = provider || getProvider();
+  return new ethers.Contract(
+    PROPOSAL_MANAGEMENT,
+    ProposalManagementABI_Interface,
+    contractProvider
+  );
+};
+
+// Helper function to get the DonationTracking contract
+export const getDonationTrackingContract = async (provider?: ethers.Provider) => {
+  const contractProvider = provider || getProvider();
+  return new ethers.Contract(
+    DONATION_TRACKING,
+    DonationTrackingABI_Interface,
+    contractProvider
+  );
 };
 
 // Helper function to get contract instances

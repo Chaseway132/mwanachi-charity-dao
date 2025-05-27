@@ -1,40 +1,41 @@
-import { BrowserProvider } from 'ethers';
-import { getContracts as getContractsUtil } from './contracts';
+import { ethers } from 'ethers';
 
-// Track provider instance for force refresh
-let providerInstance: BrowserProvider | null = null;
+let provider: ethers.BrowserProvider | null = null;
 
 export const getProvider = async (forceNew = false) => {
-  if (!window.ethereum) {
-    throw new Error('Please install MetaMask to use this application');
-  }
-  
-  // If forcing new connection or no existing instance
-  if (forceNew || !providerInstance) {
-    console.log("Creating new provider instance");
-    // Force MetaMask to reconnect
-    await window.ethereum.request({ method: 'eth_requestAccounts' });
-    providerInstance = new BrowserProvider(window.ethereum);
-  }
-  
-  return providerInstance;
-};
-
-// Force clear the provider cache
-export const resetProvider = async () => {
-  providerInstance = null;
-  if (window.ethereum) {
-    try {
-      // Clear any pending requests
-      await window.ethereum.request({ method: 'eth_requestAccounts' });
-      console.log("Provider cache cleared");
-      return true;
-    } catch (error) {
-      console.error("Failed to reset provider:", error);
-      return false;
+  if (!provider || forceNew) {
+    if (window.ethereum) {
+      provider = new ethers.BrowserProvider(window.ethereum);
+    } else {
+      throw new Error('Please install MetaMask or another Web3 wallet');
     }
   }
-  return false;
+  return provider;
 };
 
-export const getContracts = getContractsUtil; 
+export const getSigner = async () => {
+  const provider = await getProvider();
+  return provider.getSigner();
+};
+
+export const getConnectedAddress = async () => {
+  const provider = await getProvider();
+  const signer = await provider.getSigner();
+  return signer.getAddress();
+};
+
+export const formatAddress = (address: string) => {
+  return `${address.slice(0, 6)}...${address.slice(-4)}`;
+};
+
+export const formatAmount = (amount: bigint) => {
+  return ethers.formatEther(amount);
+};
+
+export const parseAmount = (amount: string) => {
+  return ethers.parseEther(amount);
+};
+
+export const resetProvider = () => {
+  provider = null;
+}; 

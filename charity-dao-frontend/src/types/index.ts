@@ -1,3 +1,7 @@
+/**
+ * Common types used throughout the application
+ */
+
 export interface Donation {
   id: number;
   donor: string;
@@ -5,6 +9,7 @@ export interface Donation {
   timestamp: string;
   metadataHash?: string;
   transactionHash?: string;
+  description?: string;
 }
 
 export interface RawDonation {
@@ -25,4 +30,18 @@ export interface Proposal {
   status: string;
   votesFor: number;
   votesAgainst: number;
+  approved: boolean;
+  executed: boolean;
+  votingEndTime?: number;
+  signatureCount?: number;
+  executionTime?: number;
 }
+
+export interface VotedProposal {
+  proposalId: number;
+  voter: string;
+  timestamp: number;
+}
+
+// Alias for backward compatibility
+export type RawProposal = Proposal;

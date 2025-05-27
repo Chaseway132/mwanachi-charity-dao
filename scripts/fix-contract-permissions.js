@@ -1,152 +1,155 @@
 const { ethers } = require("hardhat");
+const path = require("path");
+const fs = require("fs");
 
 async function main() {
-  console.log("Fixing contract permissions for ProposalManagement and FundAllocation contracts...");
-  
-  // Contract addresses from deployment
-  const proposalManagementAddress = "0x3487996B4F6EA237248720896D4915884bAE05d4";
-  const fundAllocationAddress = "0x8ec4B52F5aa2AA5BE4175093caf7d9c97b943b6E";
-  const platformAddress = "0x0f1097e50D8FA286a3AcAB8635a3bd7A41fd00C7";
-  
-  // Get signer
+  console.log("Fixing contract permissions...");
+
+  // Get the deployer account
   const [deployer] = await ethers.getSigners();
-  console.log("Connected account:", deployer.address);
-  
+  console.log("Using account:", deployer.address);
+
+  // Get deployed addresses
+  const addressesPath = path.join(__dirname, "../deployedAddresses.json");
+  console.log("\nLoading addresses from:", addressesPath);
+  const addresses = JSON.parse(fs.readFileSync(addressesPath, 'utf8'));
+
   // Get contract instances
-  const ProposalManagement = await ethers.getContractFactory("ProposalManagement");
+  console.log("\nConnecting to contracts...");
+  
+  const CharityDAOPlatform = await ethers.getContractFactory("CharityDAOPlatform");
+  const charityDAOPlatform = CharityDAOPlatform.attach(addresses.CHARITY_DAO_PLATFORM);
+  console.log("CharityDAOPlatform at:", await charityDAOPlatform.getAddress());
+  
   const FundAllocation = await ethers.getContractFactory("FundAllocation");
+  const fundAllocation = FundAllocation.attach(addresses.FUND_ALLOCATION);
+  console.log("FundAllocation at:", await fundAllocation.getAddress());
   
-  const proposalContract = ProposalManagement.attach(proposalManagementAddress);
-  const fundContract = FundAllocation.attach(fundAllocationAddress);
+  const ProposalManagement = await ethers.getContractFactory("ProposalManagement");
+  const proposalManagement = ProposalManagement.attach(addresses.PROPOSAL_MANAGEMENT);
+  console.log("ProposalManagement at:", await proposalManagement.getAddress());
+
+  // Check if we're the owner of CharityDAOPlatform
+  const platformOwner = await charityDAOPlatform.owner();
+  console.log("\nCharityDAOPlatform owner:", platformOwner);
   
-  console.log("\nStep 1: Checking if ProposalManagement contract has the setFundAllocationContract function");
-  // Check if the function exists (might not if we haven't redeployed)
-  try {
-    const funcExists = typeof proposalContract.setFundAllocationContract === "function";
-    console.log(`Does setFundAllocationContract exist? ${funcExists ? 'Yes' : 'No'}`);
-    
-    if (!funcExists) {
-      console.log("❌ The setFundAllocationContract function does not exist.");
-      console.log("The contracts need to be redeployed with the updated code.");
-      console.log("\nPlease follow these steps:");
-      console.log("1. Run: npx hardhat compile");
-      console.log("2. Run: npx hardhat run scripts/deploy.js --network ganache");
-      console.log("3. Update contracts in frontend if necessary");
-      return;
-    }
-  } catch (error) {
-    console.error("Error checking function existence:", error);
+  const isPlatformOwner = platformOwner.toLowerCase() === deployer.address.toLowerCase();
+  console.log("Are we the owner of CharityDAOPlatform?", isPlatformOwner);
+  
+  if (!isPlatformOwner) {
+    console.log("We are not the owner of CharityDAOPlatform. Cannot proceed with fixes.");
     return;
   }
+
+  // Step 1: Set the platform contract in FundAllocation
+  console.log("\nStep 1: Setting platform contract in FundAllocation...");
   
-  // Step 1: Set fund allocation contract in proposal management
-  console.log(`\nStep 2: Setting FundAllocation (${fundAllocationAddress}) as authorized caller in ProposalManagement...`);
   try {
-    const tx1 = await proposalContract.setFundAllocationContract(fundAllocationAddress, {
-      gasLimit: 500000
-    });
-    console.log("Transaction sent:", tx1.hash);
-    const receipt1 = await tx1.wait();
-    console.log("Transaction confirmed with status:", receipt1.status);
-    console.log("✅ Successfully set FundAllocation contract in ProposalManagement");
+    // Use the CharityDAOPlatform's method to set itself as the platform contract
+    console.log("Calling setFundAllocationPlatform() on CharityDAOPlatform...");
+    const tx1 = await charityDAOPlatform.setFundAllocationPlatform();
+    await tx1.wait();
+    console.log("Platform contract set successfully!");
     
-    // Verify the change
+    // Verify the update
+    const platformContract = await fundAllocation.platformContract();
+    console.log("FundAllocation platform contract is now:", platformContract);
+    console.log("Is CharityDAOPlatform set as platform?", 
+      platformContract.toLowerCase() === addresses.CHARITY_DAO_PLATFORM.toLowerCase());
+  } catch (error) {
+    console.error("Error setting platform contract:", error.message);
+    
+    // Try direct approach if the first method fails
     try {
-      const authorizedContract = await proposalContract.fundAllocationContract();
-      console.log(`Authorized FundAllocation contract: ${authorizedContract}`);
-      console.log(`Match expected: ${authorizedContract.toLowerCase() === fundAllocationAddress.toLowerCase()}`);
-    } catch (error) {
-      console.error("Could not verify fundAllocationContract:", error.message);
-    }
-  } catch (error) {
-    console.error("Error setting FundAllocation contract:", error.message);
-  }
-  
-  // Step 2: Set platform contract in fund allocation
-  console.log(`\nStep 3: Setting Platform contract (${platformAddress}) in FundAllocation...`);
-  try {
-    const tx2 = await fundContract.setPlatformContract(platformAddress, {
-      gasLimit: 500000
-    });
-    console.log("Transaction sent:", tx2.hash);
-    const receipt2 = await tx2.wait();
-    console.log("Transaction confirmed with status:", receipt2.status);
-    console.log("✅ Successfully set Platform contract in FundAllocation");
-    
-    // Verify the change
-    const setplatformContract = await fundContract.platformContract();
-    console.log(`Platform contract set to: ${setplatformContract}`);
-    console.log(`Match expected: ${setplatformContract.toLowerCase() === platformAddress.toLowerCase()}`);
-  } catch (error) {
-    console.error("Error setting Platform contract:", error.message);
-  }
-  
-  // Step 3: Test direct execution to ensure permissions are working
-  console.log("\nStep 4: Testing direct proposal execution (if applicable)...");
-  
-  try {
-    // Check if there are any proposals
-    const allProposals = await proposalContract.getAllProposals();
-    console.log(`Found ${allProposals.length} proposals`);
-    
-    // Find an approved but not executed proposal
-    let testProposalId = 0;
-    for (let i = 0; i < allProposals.length; i++) {
-      const proposal = allProposals[i];
-      if (proposal.approved && !proposal.executed) {
-        testProposalId = proposal.id;
-        console.log(`Found eligible proposal ID ${testProposalId} for testing execution`);
-        break;
-      }
-    }
-    
-    if (testProposalId > 0) {
-      console.log(`Testing execution of proposal ID ${testProposalId}...`);
-      try {
-        // Check fund balance
-        const fundBalance = await ethers.provider.getBalance(fundAllocationAddress);
-        console.log(`Fund balance: ${ethers.formatEther(fundBalance)} ETH`);
+      console.log("\nTrying direct approach to set platform contract...");
+      
+      // Check if we're the owner of FundAllocation
+      const fundOwner = await fundAllocation.owner();
+      console.log("FundAllocation owner:", fundOwner);
+      
+      const isFundOwner = fundOwner.toLowerCase() === deployer.address.toLowerCase();
+      console.log("Are we the owner of FundAllocation?", isFundOwner);
+      
+      if (isFundOwner) {
+        console.log("Setting platform contract directly on FundAllocation...");
+        const tx2 = await fundAllocation.setPlatformContract(addresses.CHARITY_DAO_PLATFORM);
+        await tx2.wait();
+        console.log("Platform contract set successfully!");
         
-        // Get proposal details
-        const testProposal = await proposalContract.getProposalById(testProposalId);
-        console.log(`Proposal amount: ${ethers.formatEther(testProposal.amountRequested)} ETH`);
-        
-        if (fundBalance >= testProposal.amountRequested) {
-          const executeTx = await fundContract.executeProposal(testProposalId, {
-            gasLimit: 1000000
-          });
-          console.log("Execution transaction sent:", executeTx.hash);
-          const executeReceipt = await executeTx.wait();
-          console.log("✅ Proposal execution successful! Status:", executeReceipt.status);
-          
-          // Verify it was marked as executed
-          const updatedProposal = await proposalContract.getProposalById(testProposalId);
-          console.log(`Proposal executed status: ${updatedProposal.executed}`);
-        } else {
-          console.log("⚠️ Insufficient funds for execution. Please add more ETH to the contract.");
-        }
-      } catch (error) {
-        console.error("❌ Execution test failed:", error.message);
+        // Verify the update
+        const platformContract = await fundAllocation.platformContract();
+        console.log("FundAllocation platform contract is now:", platformContract);
+      } else {
+        console.log("We are not the owner of FundAllocation. Cannot set platform contract directly.");
       }
+    } catch (innerError) {
+      console.error("Error with direct approach:", innerError.message);
+    }
+  }
+
+  // Step 2: Check and fix ownership of FundAllocation
+  console.log("\nStep 2: Checking ownership of FundAllocation...");
+  
+  const fundOwner = await fundAllocation.owner();
+  console.log("FundAllocation owner:", fundOwner);
+  
+  const isFundOwner = fundOwner.toLowerCase() === deployer.address.toLowerCase();
+  console.log("Are we the owner of FundAllocation?", isFundOwner);
+  
+  const isPlatformFundOwner = fundOwner.toLowerCase() === addresses.CHARITY_DAO_PLATFORM.toLowerCase();
+  console.log("Is CharityDAOPlatform the owner of FundAllocation?", isPlatformFundOwner);
+  
+  if (isFundOwner) {
+    console.log("Transferring ownership of FundAllocation to CharityDAOPlatform...");
+    const tx3 = await fundAllocation.transferOwnership(addresses.CHARITY_DAO_PLATFORM);
+    await tx3.wait();
+    console.log("Ownership transferred successfully!");
+    
+    // Verify the update
+    const newFundOwner = await fundAllocation.owner();
+    console.log("FundAllocation owner is now:", newFundOwner);
+  } else if (isPlatformFundOwner) {
+    console.log("CharityDAOPlatform is already the owner of FundAllocation. No action needed.");
+  } else {
+    console.log("We are not the owner of FundAllocation and neither is CharityDAOPlatform.");
+    console.log("Consider deploying a new FundAllocation contract with correct ownership.");
+  }
+
+  // Step 3: Check if we're an authorized signer in ProposalManagement
+  console.log("\nStep 3: Checking if we're an authorized signer...");
+  
+  const isSigner = await proposalManagement.authorizedSigners(deployer.address);
+  console.log("Are we an authorized signer?", isSigner);
+  
+  if (!isSigner) {
+    // Check if we can add ourselves as a signer
+    const proposalOwner = await proposalManagement.owner();
+    console.log("ProposalManagement owner:", proposalOwner);
+    
+    const isProposalOwner = proposalOwner.toLowerCase() === deployer.address.toLowerCase();
+    console.log("Are we the owner of ProposalManagement?", isProposalOwner);
+    
+    if (isProposalOwner) {
+      console.log("Adding ourselves as a signer...");
+      const tx4 = await proposalManagement.addSigner(deployer.address);
+      await tx4.wait();
+      console.log("Added as signer successfully!");
+      
+      // Verify the update
+      const isNowSigner = await proposalManagement.authorizedSigners(deployer.address);
+      console.log("Are we now an authorized signer?", isNowSigner);
     } else {
-      console.log("No eligible proposals found for testing execution.");
+      console.log("We are not the owner of ProposalManagement. Cannot add ourselves as a signer.");
     }
-  } catch (error) {
-    console.error("Error testing execution:", error.message);
   }
-  
-  console.log("\nPermission fixes complete.");
-  console.log("To fully test:");
-  console.log("1. Open the frontend app");
-  console.log("2. Use the Hard Reload From Blockchain button");
-  console.log("3. Create a proposal if needed");
-  console.log("4. Vote on it to get it approved");
-  console.log("5. Try to execute it");
+
+  console.log("\nContract permissions check and fix completed!");
 }
 
 main()
   .then(() => process.exit(0))
   .catch((error) => {
+    console.error("\nScript execution failed!");
     console.error(error);
     process.exit(1);
-  }); 
+  });

@@ -3,13 +3,14 @@ import { Donation } from '../types';
 
 // Constants for localStorage
 const DONATION_METADATA_KEY = 'donation_ipfs_mapping';
+const METADATA_CACHE_PREFIX = 'donation_metadata_';
 
 // Helper function to get donation metadata
 const getDonationMetadata = (txHash: string): string | null => {
   try {
     const stored = localStorage.getItem(DONATION_METADATA_KEY);
     if (!stored) return null;
-    
+
     const metadataMap = JSON.parse(stored);
     return metadataMap[txHash] || null;
   } catch (error) {
@@ -20,18 +21,46 @@ const getDonationMetadata = (txHash: string): string | null => {
 
 interface DonationListProps {
   donations: Donation[];
+  searchAddress: string;
+  setSearchAddress: (address: string) => void;
+  compact?: boolean;
 }
 
-const DonationList: React.FC<DonationListProps> = ({ donations }) => {
+const DonationList: React.FC<DonationListProps> = ({
+  donations,
+  searchAddress,
+  setSearchAddress,
+  compact = false
+}) => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
   const [showAll, setShowAll] = useState(false);
   const [metadataMap, setMetadataMap] = useState<Record<string, string>>({});
+
+  // Example descriptions for demonstration
+  const exampleDescriptions = [
+    "Supporting flood victims in Southeast Asia",
+    "Donation for educational supplies",
+    "Contributing to the community fund",
+    "Supporting healthcare initiatives",
+    "Helping with disaster relief",
+  ];
 
   // Load metadata for donations when component mounts or donations change
   useEffect(() => {
     const loadMetadata = async () => {
       const newMetadataMap: Record<string, string> = {};
-      
+
+      // Debug logging to find descriptions
+      console.log('Current donations:', donations);
+
+      // Log all localStorage keys to find where descriptions are stored
+      const allKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) allKeys.push(key);
+      }
+      console.log('All localStorage keys:', allKeys);
+
       for (const donation of donations) {
         if (donation.transactionHash) {
           const ipfsHash = getDonationMetadata(donation.transactionHash);
@@ -40,16 +69,17 @@ const DonationList: React.FC<DonationListProps> = ({ donations }) => {
           }
         }
       }
-      
+
       setMetadataMap(newMetadataMap);
     };
-    
+
     loadMetadata();
   }, [donations]);
 
   const formatAddress = (address: string | undefined) => {
     if (!address) return 'Unknown';
-    return `${address}`;
+    // Always return the full address without truncation
+    return address;
   };
 
   const formatDate = (timestamp: string) => {
@@ -59,10 +89,10 @@ const DonationList: React.FC<DonationListProps> = ({ donations }) => {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      second: '2-digit',
-      hour12: true
+      hour: compact ? undefined : '2-digit',
+      minute: compact ? undefined : '2-digit',
+      second: compact ? undefined : '2-digit',
+      hour12: !compact
     });
   };
 
@@ -86,95 +116,90 @@ const DonationList: React.FC<DonationListProps> = ({ donations }) => {
   }
 
   // Determine which donations to display
-  const displayedDonations = showAll ? donations : donations.slice(0, 2);
+  const displayedDonations = showAll ? donations : donations.slice(0, compact ? 2 : 2);
 
   return (
-    <div>
-      {displayedDonations.map((donation) => (
-        <div 
-          key={donation.id} 
-          className="border rounded-lg mb-4 overflow-hidden shadow-sm"
-        >
-          <div 
-            className="p-4 cursor-pointer"
-            onClick={() => toggleExpand(donation.id)}
-          >
-            <div className="flex justify-between items-center">
-              <span className="text-blue-600 text-2xl font-medium">{donation.amount} ETH</span>
-              <button className="text-gray-500">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d={expandedId === donation.id ? 
-                    "M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" :
-                    "M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-                  } clipRule="evenodd" />
-                </svg>
-              </button>
-            </div>
-            
-            <div className="text-gray-500 text-sm mt-2">
-              {formatAddress(donation.donor)}
-            </div>
-          </div>
-          
-          {expandedId === donation.id && (
-            <div className="border-t p-4 bg-gray-50">
-              <div className="flex justify-between items-center text-sm text-gray-600">
-                <div>{formatDate(donation.timestamp)}</div>
-                <div>
-                  {metadataMap[donation.id] ? (
-                    <a 
-                      href={`https://gateway.pinata.cloud/ipfs/${metadataMap[donation.id]}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-600 hover:text-blue-800 font-medium flex items-center"
-                    >
-                      <svg 
-                        className="w-4 h-4 mr-1" 
-                        fill="none" 
-                        stroke="currentColor" 
-                        viewBox="0 0 24 24" 
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path 
-                          strokeLinecap="round" 
-                          strokeLinejoin="round" 
-                          strokeWidth="2" 
-                          d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"
-                        />
-                      </svg>
-                      View on IPFS
-                      <span className="text-xs text-gray-500 ml-1">
-                        ({formatIpfsHash(metadataMap[donation.id])})
-                      </span>
-                    </a>
-                  ) : (
-                    'No metadata'
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      ))}
-      
-      {donations.length > 2 && (
-        <div className="text-center mt-4">
-          <button 
-            className="text-blue-600 font-medium text-sm flex items-center mx-auto"
-            onClick={() => setShowAll(!showAll)}
-          >
-            {showAll ? 'Show Less' : 'Show More'}
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" viewBox="0 0 20 20" fill="currentColor">
-              <path fillRule="evenodd" d={showAll ? 
-                "M14.707 12.707a1 1 0 01-1.414 0L10 9.414l-3.293 3.293a1 1 0 01-1.414-1.414l4-4a1 1 0 011.414 0l4 4a1 1 0 010 1.414z" :
-                "M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z"
-              } clipRule="evenodd" />
-            </svg>
-          </button>
+    <div className={`bg-white rounded-lg ${compact ? '' : 'shadow'}`}>
+      {!compact && (
+        <div className="p-5 border-b">
+          <h2 className="text-xl font-bold">Recent Donations</h2>
         </div>
       )}
+
+      <div className="p-5">
+        {/* Search input - only show in full mode */}
+        {!compact && (
+          <div className="mb-6">
+            <div className="relative">
+              <input
+                type="text"
+                value={searchAddress}
+                onChange={(e) => setSearchAddress(e.target.value)}
+                placeholder="Search by wallet address"
+                className="w-full px-5 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              {searchAddress && (
+                <button
+                  onClick={() => setSearchAddress('')}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                  </svg>
+                </button>
+              )}
+            </div>
+            {donations.length === 0 && searchAddress && (
+              <p className="text-gray-500 text-sm mt-2">No donations found for this address.</p>
+            )}
+          </div>
+        )}
+
+        {/* Donations list */}
+        {donations.length === 0 ? (
+          <p className="text-gray-500 text-center">No donations yet.</p>
+        ) : (
+          <div className="space-y-6">
+            {displayedDonations.map((donation, index) => (
+              <div key={index} className={`bg-white rounded-lg shadow mb-4 overflow-hidden relative border border-gray-100 hover:shadow-md transition-shadow ${compact ? 'p-4' : 'p-5'}`}>
+                <div className="flex justify-between items-start">
+                  <div>
+                    <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-600 mb-1`}>From</p>
+                    <p className={`font-mono ${compact ? 'text-xs' : 'text-sm'} bg-gray-50 p-2 rounded-md break-all`}>{formatAddress(donation.donor)}</p>
+
+                    {/* Only show description if it actually exists */}
+                    {donation.description && (
+                      <p className={`mt-3 ${compact ? 'text-xs' : 'text-sm'} text-gray-600 italic`}>
+                        "{donation.description}"
+                      </p>
+                    )}
+                  </div>
+                  <div className="text-right">
+                    <p className={`${compact ? 'text-lg' : 'text-xl'} font-bold text-blue-600`}>{donation.amount} ETH</p>
+                    <p className={`${compact ? 'text-xs' : 'text-sm'} text-gray-500 mt-1`}>
+                      {formatDate(donation.timestamp)}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+
+            {/* Show more/less button - only show in non-compact (full) mode */}
+            {!compact && donations.length > 2 && (
+              <div className="text-center mt-6">
+                <button
+                  onClick={() => setShowAll(!showAll)}
+                  className="px-5 py-3 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                >
+                  {showAll ? 'Show Less' : `Show All Donations (${donations.length})`}
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-export default DonationList; 
+export default DonationList;

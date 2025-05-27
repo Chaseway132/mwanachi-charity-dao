@@ -87,5 +87,10 @@ contract CharityDAOPlatform {
         return donationContract.getAllDonations();
     }
 
+    // Function to set the platform contract in FundAllocation
+    function setFundAllocationPlatform() public onlyOwner {
+        fundAllocationContract.setPlatformContract(address(this));
+    }
+
     event ProposalExecuted(uint indexed proposalId);
 }

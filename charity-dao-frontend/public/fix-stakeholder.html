@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Stakeholder Status</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            background-color: #f5f5f5;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        button.danger {
+            background-color: #e74c3c;
+        }
+        button.success {
+            background-color: #2ecc71;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #ecf0f1;
+            border-radius: 4px;
+        }
+        input {
+            padding: 8px;
+            margin-bottom: 10px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+<body>
+    <h1>Fix Stakeholder Status</h1>
+    
+    <div class="container">
+        <h2>Current Status</h2>
+        <div class="status" id="status">Checking...</div>
+        
+        <h2>Actions</h2>
+        <button class="success" onclick="setStakeholderTrue()">Set Status to TRUE</button>
+        <button class="danger" onclick="setStakeholderFalse()">Set Status to FALSE</button>
+        <button onclick="checkStatus()">Check Current Status</button>
+    </div>
+    
+    <div class="container">
+        <h2>Manual Wallet Entry</h2>
+        <p>Enter your wallet address below (optional):</p>
+        <input type="text" id="walletAddress" placeholder="0x...">
+        <button onclick="saveWalletAddress()">Save Wallet Address</button>
+        <div class="status" id="walletStatus">No wallet saved</div>
+    </div>
+    
+    <div class="container">
+        <h2>Testing Tools</h2>
+        <button onclick="clearCache()">Clear All Cache</button>
+        <button onclick="checkContract()">Check Contract Connection</button>
+        <button onclick="window.location.href='/'">Return to App</button>
+    </div>
+
+    <script>
+        // Check status on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            checkStatus();
+            checkWallet();
+        });
+        
+        function checkStatus() {
+            const statusElement = document.getElementById('status');
+            const status = localStorage.getItem('isStakeholder');
+            
+            if (status === 'true') {
+                statusElement.innerHTML = '<strong style="color:green">TRUE</strong> - You are a stakeholder';
+            } else if (status === 'false') {
+                statusElement.innerHTML = '<strong style="color:red">FALSE</strong> - You are not a stakeholder';
+            } else {
+                statusElement.innerHTML = '<strong style="color:gray">NOT SET</strong> - Stakeholder status not found in localStorage';
+            }
+        }
+        
+        function setStakeholderTrue() {
+            localStorage.setItem('isStakeholder', 'true');
+            alert('Stakeholder status set to TRUE');
+            checkStatus();
+        }
+        
+        function setStakeholderFalse() {
+            localStorage.setItem('isStakeholder', 'false');
+            alert('Stakeholder status set to FALSE');
+            checkStatus();
+        }
+        
+        function checkWallet() {
+            const walletElement = document.getElementById('walletStatus');
+            const wallet = localStorage.getItem('connectedAddress');
+            
+            if (wallet) {
+                walletElement.innerHTML = `Saved wallet: <strong>${wallet}</strong>`;
+            } else {
+                walletElement.innerHTML = 'No wallet address saved';
+            }
+        }
+        
+        function saveWalletAddress() {
+            const address = document.getElementById('walletAddress').value;
+            if (!address || !address.startsWith('0x')) {
+                alert('Please enter a valid Ethereum address starting with 0x');
+                return;
+            }
+            
+            localStorage.setItem('connectedAddress', address);
+            alert('Wallet address saved');
+            checkWallet();
+        }
+        
+        function clearCache() {
+            if (confirm('Are you sure you want to clear all localStorage data?')) {
+                localStorage.clear();
+                alert('All localStorage data cleared');
+                checkStatus();
+                checkWallet();
+            }
+        }
+        
+        function checkContract() {
+            alert('This feature requires web3 connection and is only available in the main app.');
+        }
+    </script>
+</body>
+</html> 

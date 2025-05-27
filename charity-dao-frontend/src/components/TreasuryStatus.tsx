@@ -5,6 +5,42 @@ import { getProvider } from '../utils/web3';
 import { CHARITY_DAO_PLATFORM, FUND_ALLOCATION } from '../utils/contracts';
 import { getFundAllocationContract } from '../utils/contracts';
 
+// Add a safe toast utility function to prevent runtime errors
+const safeToast = {
+  error: (message: string) => {
+    try {
+      toast.error(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  },
+  success: (message: string) => {
+    try {
+      toast.success(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  },
+  info: (message: string) => {
+    try {
+      toast.info(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  },
+  warning: (message: string) => {
+    try {
+      toast.warning(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  }
+};
+
 const TreasuryStatus: React.FC = () => {
   const [platformBalance, setPlatformBalance] = useState('0.0');
   const [fundBalance, setFundBalance] = useState('0.0');
@@ -33,7 +69,7 @@ const TreasuryStatus: React.FC = () => {
       }
     } catch (error) {
       console.error('Error loading balances:', error);
-      toast.error('Failed to load treasury balances');
+      safeToast.error('Failed to load treasury balances');
     } finally {
       setIsLoading(false);
     }

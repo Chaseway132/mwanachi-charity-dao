@@ -1,0 +1,47 @@
+const hre = require("hardhat");
+const { ethers } = require("hardhat");
+const fs = require("fs");
+const path = require("path");
+
+async function main() {
+  console.log("Creating a test proposal...");
+  
+  // Get the deployed contract addresses from the deployment file
+  const deployedAddressesPath = path.join(__dirname, "../deployedAddresses.json");
+  const addresses = JSON.parse(fs.readFileSync(deployedAddressesPath, 'utf8'));
+  
+  const proposalManagementAddress = addresses.PROPOSAL_MANAGEMENT;
+  console.log("Using ProposalManagement contract at:", proposalManagementAddress);
+  
+  // Get the ProposalManagement contract
+  const ProposalManagement = await ethers.getContractFactory("ProposalManagement");
+  const proposalManagement = await ProposalManagement.attach(proposalManagementAddress);
+  
+  // Create a test proposal
+  const testDescription = "Test Proposal " + new Date().toISOString();
+  const amountRequested = ethers.parseEther("0.1"); // 0.1 ETH
+  const recipient = (await ethers.getSigners())[0].address;
+  
+  console.log(`Creating proposal with description "${testDescription}", amount ${ethers.formatEther(amountRequested)} ETH, recipient ${recipient}`);
+  
+  // Send the transaction
+  const tx = await proposalManagement.createProposal(testDescription, amountRequested, recipient);
+  console.log("Transaction sent:", tx.hash);
+  
+  // Wait for the transaction to be mined
+  const receipt = await tx.wait();
+  console.log("Transaction confirmed:", receipt.hash);
+  
+  // Get the proposal count to verify
+  const proposalCount = await proposalManagement.getProposalCount();
+  console.log("Total proposals:", proposalCount.toString());
+  
+  console.log("Test proposal created successfully!");
+}
+
+main()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error(error);
+    process.exit(1);
+  }); 

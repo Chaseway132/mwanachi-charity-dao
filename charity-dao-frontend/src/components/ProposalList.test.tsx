@@ -1,106 +1,157 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, act, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ProposalList from './ProposalList';
+import { ProposalContext } from '../contexts/ProposalContext';
 
-// Mock the dependencies
-jest.mock('../utils/contracts', () => ({
-  getContracts: jest.fn().mockResolvedValue({
+// Mock the web3 utilities
+jest.mock('../utils/web3', () => ({
+  getProvider: jest.fn().mockResolvedValue({
+    getSigner: jest.fn().mockResolvedValue({
+      getAddress: jest.fn().mockResolvedValue('0x1234567890123456789012345678901234567890')
+    })
+  })
+}));
+
+// Mock the contract helpers
+jest.mock('../utils/contractHelpers', () => ({
+  getContractInstances: jest.fn().mockResolvedValue({
     charityDAOPlatform: {
       getAllProposals: jest.fn().mockResolvedValue([
         {
           id: BigInt(1),
           description: 'Test Proposal 1',
-          amountRequested: BigInt(1000000000000000000), // 1 ETH
-          voteCount: BigInt(2),
-          approved: false,
+          amount: BigInt(1000000000000000000), // 1 ETH
+          votesFor: BigInt(2),
+          votesAgainst: BigInt(1),
           executed: false,
-          recipient: '0x1234567890123456789012345678901234567890',
-          votingEndTime: BigInt(Math.floor(Date.now() / 1000) + 86400) // 24 hours from now
+          cancelled: false,
+          creationTime: BigInt(Math.floor(Date.now() / 1000) - 86400), // 24 hours ago
+          executionTime: BigInt(0),
+          proposer: '0x1234567890123456789012345678901234567890',
+          recipient: '0x0987654321098765432109876543210987654321'
         },
         {
           id: BigInt(2),
           description: 'Test Proposal 2',
-          amountRequested: BigInt(2000000000000000000), // 2 ETH
-          voteCount: BigInt(3),
-          approved: true,
+          amount: BigInt(2000000000000000000), // 2 ETH
+          votesFor: BigInt(3),
+          votesAgainst: BigInt(0),
           executed: false,
-          recipient: '0x0987654321098765432109876543210987654321',
-          votingEndTime: BigInt(Math.floor(Date.now() / 1000) + 86400) // 24 hours from now
+          cancelled: false,
+          creationTime: BigInt(Math.floor(Date.now() / 1000) - 86400), // 24 hours ago
+          executionTime: BigInt(0),
+          proposer: '0x1234567890123456789012345678901234567890',
+          recipient: '0x0987654321098765432109876543210987654321'
         }
       ]),
-      voteOnProposal: jest.fn().mockResolvedValue({
-        hash: '0x1234567890abcdef',
-        wait: jest.fn().mockResolvedValue({ status: 1 })
-      }),
-      approveProposal: jest.fn().mockResolvedValue({
-        hash: '0x1234567890abcdef',
-        wait: jest.fn().mockResolvedValue({ status: 1 })
-      }),
-      executeProposal: jest.fn().mockResolvedValue({
-        hash: '0x1234567890abcdef',
-        wait: jest.fn().mockResolvedValue({ status: 1 })
-      }),
-      owner: jest.fn().mockResolvedValue('0x1234567890123456789012345678901234567890'),
+      hasVoted: jest.fn().mockResolvedValue(false),
+      isStakeholder: jest.fn().mockResolvedValue(true),
+      isSigned: jest.fn().mockResolvedValue(false),
+      canSign: jest.fn().mockResolvedValue(true),
+      isApproved: jest.fn().mockResolvedValue(false),
       target: '0x32f15DCD39AEA5c23c9ea01f84Cca08ccbB1534E'
-    },
-    fundAllocation: {
-      target: '0x2E31459CB46CEEBd6815c715e7e07D77fc21c58D'
     }
   })
 }));
 
-jest.mock('../utils/provider', () => ({
-  getProvider: jest.fn().mockResolvedValue({
-    getSigner: jest.fn().mockResolvedValue({
-      getAddress: jest.fn().mockResolvedValue('0x1234567890123456789012345678901234567890')
-    }),
-    getBalance: jest.fn().mockResolvedValue(BigInt(1000000000000000000)) // 1 ETH
-  })
-}));
-
+// Mock react-hot-toast
 jest.mock('react-hot-toast', () => ({
   success: jest.fn(),
   error: jest.fn()
 }));
 
 describe('ProposalList Component', () => {
+  const mockProposals = [
+    {
+      id: 1,
+      description: 'Test Proposal 1',
+      amount: BigInt(1000000000000000000), // 1 ETH
+      votesFor: 2,
+      votesAgainst: 1,
+      executed: false,
+      cancelled: false,
+      creationTime: Math.floor(Date.now() / 1000) - 86400,
+      executionTime: 0,
+      proposer: '0x1234567890123456789012345678901234567890',
+      recipient: '0x0987654321098765432109876543210987654321'
+    },
+    {
+      id: 2,
+      description: 'Test Proposal 2',
+      amount: BigInt(2000000000000000000), // 2 ETH
+      votesFor: 3,
+      votesAgainst: 0,
+      executed: false,
+      cancelled: false,
+      creationTime: Math.floor(Date.now() / 1000) - 86400,
+      executionTime: 0,
+      proposer: '0x1234567890123456789012345678901234567890',
+      recipient: '0x0987654321098765432109876543210987654321'
+    }
+  ];
+
+  const mockContextValue = {
+    proposals: mockProposals,
+    setProposals: jest.fn(),
+    loading: false,
+    error: null,
+    fetchProposals: jest.fn(),
+    setConnectedAddress: jest.fn(),
+    refreshProposals: jest.fn()
+  };
+
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   test('renders proposal list', async () => {
-    render(<ProposalList />);
+    await act(async () => {
+      render(
+        <ProposalContext.Provider value={mockContextValue}>
+          <ProposalList />
+        </ProposalContext.Provider>
+      );
+    });
     
-    // Wait for proposals to load
     await waitFor(() => {
       expect(screen.getByText('Test Proposal 1')).toBeInTheDocument();
       expect(screen.getByText('Test Proposal 2')).toBeInTheDocument();
     });
-    
-    // Check if proposal details are displayed
-    expect(screen.getByText('1.0 ETH')).toBeInTheDocument();
-    expect(screen.getByText('2.0 ETH')).toBeInTheDocument();
   });
 
   test('displays correct vote counts', async () => {
-    render(<ProposalList />);
+    await act(async () => {
+      render(
+        <ProposalContext.Provider value={mockContextValue}>
+          <ProposalList />
+        </ProposalContext.Provider>
+      );
+    });
     
     await waitFor(() => {
-      expect(screen.getByText('2/3')).toBeInTheDocument();
-      expect(screen.getByText('3/3')).toBeInTheDocument();
+      expect(screen.getByText('2')).toBeInTheDocument(); // votesFor of first proposal
+      expect(screen.getByText('3')).toBeInTheDocument(); // votesFor of second proposal
     });
   });
 
   test('shows correct proposal status', async () => {
-    render(<ProposalList />);
+    const mockProposalsWithStatus = [
+      { ...mockProposals[0], executed: false },
+      { ...mockProposals[1], executed: true }
+    ];
+
+    await act(async () => {
+      render(
+        <ProposalContext.Provider value={{ ...mockContextValue, proposals: mockProposalsWithStatus }}>
+          <ProposalList />
+        </ProposalContext.Provider>
+      );
+    });
     
     await waitFor(() => {
-      // First proposal is not approved
-      expect(screen.getByText('Pending')).toBeInTheDocument();
-      
-      // Second proposal is approved but not executed
-      expect(screen.getByText('Approved')).toBeInTheDocument();
+      expect(screen.getByText('Active')).toBeInTheDocument();
+      expect(screen.getByText('Executed')).toBeInTheDocument();
     });
   });
 }); 

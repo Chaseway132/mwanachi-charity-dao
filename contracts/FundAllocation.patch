@@ -1,0 +1,55 @@
+--- FundAllocation.sol	2023-05-15 10:00:00.000000000 +0000
++++ FundAllocationSecure.sol	2023-05-15 10:00:00.000000000 +0000
+@@ -7,6 +7,7 @@
+     ProposalManagement public proposalContract;
+     address public owner;
+     address public platformContract;
++    bool private locked; // Reentrancy guard
+ 
+     event ProposalExecuted(uint proposalId, address beneficiary, uint amount);
+     event FundsReceived(address sender, uint amount);
+@@ -14,6 +15,13 @@
+     event OwnershipTransferred(address indexed previousOwner, address indexed newOwner);
+ 
+     modifier onlyAuthorized() {
++        require(
++            msg.sender == owner || msg.sender == platformContract,
++            "Only owner or platform can execute proposals"
++        );
++        _;
++    }
++
++    modifier nonReentrant() {
+         require(
+             msg.sender == owner || msg.sender == platformContract,
+             "Only owner or platform can execute proposals"
+@@ -25,6 +33,7 @@
+         require(_proposalContract != address(0), "Invalid contract address.");
+         proposalContract = ProposalManagement(_proposalContract);
+         owner = msg.sender;
++        locked = false;
+     }
+ 
+     function setPlatformContract(address _platformContract) public {
+@@ -39,16 +48,16 @@
+         emit FundsReceived(msg.sender, msg.value);
+     }
+ 
+-    function executeProposal(uint _proposalId) public onlyAuthorized {
++    function executeProposal(uint _proposalId) public onlyAuthorized nonReentrant {
+         ProposalManagement.Proposal memory proposal = proposalContract.getProposalById(_proposalId);
+ 
+         require(proposal.approved, "Proposal not approved yet.");
+         require(!proposal.executed, "Proposal already executed.");
+         require(address(this).balance >= proposal.amountRequested, "Insufficient contract balance.");
+ 
+-        // Transfer funds to the proposal recipient first
++        // Mark the proposal as executed BEFORE transferring funds
++        proposalContract.markProposalExecuted(_proposalId);
++        
++        // Transfer funds to the proposal recipient after updating state
+         (bool success, ) = proposal.recipient.call{value: proposal.amountRequested}("");
+         require(success, "Transfer failed");
+-
+-        // Mark the proposal as executed after successful transfer
+-        proposalContract.markProposalExecuted(_proposalId);

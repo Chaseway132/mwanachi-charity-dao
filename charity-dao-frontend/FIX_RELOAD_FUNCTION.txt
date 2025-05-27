@@ -1,0 +1,39 @@
+// INSTRUCTION: Replace lines 321-333 with this code:
+
+  // Remove duplicate declarations - define only one reloadProposals function
+  const reloadProposals = useCallback(async () => {
+    console.log("Forced reload of proposals");
+    try {
+      setIsLoading(true);
+      // Call a different function to avoid recursion
+      await loadProposalsFromBlockchain();
+    } catch (error) {
+      console.error("Error reloading proposals:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // Helper function to load proposals from blockchain
+  const loadProposalsFromBlockchain = async () => {
+    // You can copy the implementation from your loadProposals function here
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      const provider = await getProvider(true);
+      const proposalContract = await getProposalManagementContract(provider);
+      
+      // Get proposals from blockchain and process them
+      // ... your existing implementation ...
+      
+    } catch (error) {
+      console.error("Error loading proposals from blockchain:", error);
+      setError("Failed to load proposals. Please check your connection.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+// IMPORTANT: You need to rename any references to loadProposals() to loadProposalsFromBlockchain()
+// in the rest of your code. Search for loadProposals() and update it accordingly. 

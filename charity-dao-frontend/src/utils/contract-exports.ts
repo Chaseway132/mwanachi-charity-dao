@@ -8,11 +8,11 @@ import {
 } from '../config/contracts';
 
 // Contract ABIs
-import ProposalManagementABI from '../contracts/ProposalManagement.json';
-import DonationTrackingABI from '../contracts/DonationTracking.json';
-import VotingGovernanceABI from '../contracts/VotingGovernance.json';
-import FundAllocationABI from '../contracts/FundAllocation.json';
-import CharityDAOPlatformABI from '../contracts/CharityDAOPlatform.json';
+import ProposalManagementABI from '../config/ProposalManagement.json';
+import DonationTrackingABI from '../config/DonationTracking.json';
+import VotingGovernanceABI from '../config/VotingGovernance.json';
+import FundAllocationABI from '../config/FundAllocation.json';
+import CharityDAOPlatformABI from '../config/CharityDAOPlatform.json';
 
 // Export contract addresses
 export { 

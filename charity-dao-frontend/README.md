@@ -1,6 +1,76 @@
 # Charity DAO Frontend
 
-The React-based frontend application for the Charity DAO platform.
+This is the frontend application for the Charity DAO project. It provides a user interface for interacting with the Charity DAO smart contracts.
+
+## Features
+
+- Connect to Web3 wallet (MetaMask)
+- View and create proposals
+- Vote on proposals
+- Execute passed proposals
+- View proposal details and voting status
+
+## Prerequisites
+
+- Node.js (v14 or higher)
+- npm or yarn
+- MetaMask or another Web3 wallet
+- Local Ethereum network (e.g., Hardhat) or testnet
+
+## Installation
+
+1. Clone the repository
+2. Install dependencies:
+```bash
+npm install
+# or
+yarn install
+```
+
+3. Create a `.env` file in the root directory with the following variables:
+```
+REACT_APP_PROPOSAL_MANAGEMENT_ADDRESS=0x0000000000000000000000000000000000000000
+REACT_APP_CHAIN_ID=1337
+REACT_APP_RPC_URL=http://localhost:8545
+```
+
+4. Start the development server:
+```bash
+npm start
+# or
+yarn start
+```
+
+## Smart Contract Deployment
+
+1. Deploy the smart contracts:
+```bash
+npx hardhat run scripts/deploy.ts --network localhost
+```
+
+2. Update the `.env` file with the deployed contract addresses.
+
+## Testing
+
+Run the test suite:
+```bash
+npm test
+# or
+yarn test
+```
+
+## Building for Production
+
+Build the application for production:
+```bash
+npm run build
+# or
+yarn build
+```
+
+## License
+
+This project is licensed under the MIT License.
 
 ## Directory Structure
 

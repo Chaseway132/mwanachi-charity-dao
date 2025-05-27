@@ -1,8 +1,8 @@
-import CharityDAOPlatformABI from '../contracts/CharityDAOPlatform.json';
-import DonationTrackingABI from '../contracts/DonationTracking.json';
-import FundAllocationABI from '../contracts/FundAllocation.json';
-import ProposalManagementABI from '../contracts/ProposalManagement.json';
-import VotingGovernanceABI from '../contracts/VotingGovernance.json';
+import CharityDAOPlatformABI from '../config/CharityDAOPlatform.json';
+import DonationTrackingABI from '../config/DonationTracking.json';
+import FundAllocationABI from '../config/FundAllocation.json';
+import ProposalManagementABI from '../config/ProposalManagement.json';
+import VotingGovernanceABI from '../config/VotingGovernance.json';
 
 // Extract the ABI array from the contract artifacts
 export const CharityDAOPlatformABI_Interface = CharityDAOPlatformABI.abi;

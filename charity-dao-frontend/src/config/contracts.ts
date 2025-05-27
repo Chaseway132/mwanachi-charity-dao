@@ -1,14 +1,33 @@
 import { ethers } from 'ethers';
-import VotingGovernanceABI from '../contracts/VotingGovernance.json';
-import { getProvider } from '../utils/provider';
+import { getProvider } from '../utils/web3';
+import VotingGovernanceABI from './VotingGovernance.json';
+import { DEPLOYED_ADDRESSES } from './deployedAddresses';
 
-export const PROPOSAL_MANAGEMENT = "0x40c3848fae123CEfcc284312032bb03328906F80";
-export const DONATION_TRACKING = "0xDD56D4747A940b22d272ca95E6625F8C8211eC08";
-export const VOTING_GOVERNANCE = "0xC0c491b0f35A11a0D261a48DC73dFD32d59798A0";
-export const FUND_ALLOCATION = "0x85b19CCeD811F94c325203fb472765e0FD5dEBFA";
-export const CHARITY_DAO_PLATFORM = "0x9f2Fc2B59b0F62DfeC63277899E9ad7201E711B0";
+// Export individual addresses
+export const {
+  PROPOSAL_MANAGEMENT,
+  DONATION_TRACKING,
+  VOTING_GOVERNANCE,
+  FUND_ALLOCATION,
+  CHARITY_DAO_PLATFORM
+} = DEPLOYED_ADDRESSES;
 
-// Ganache network configuration
+// Export contract ABIs
+export const VOTING_GOVERNANCE_ABI = VotingGovernanceABI.abi;
+
+// Contract configurations combining address and ABI
+export const CONTRACT_CONFIGS = {
+  VOTING_GOVERNANCE: {
+    address: DEPLOYED_ADDRESSES.VOTING_GOVERNANCE,
+    abi: VOTING_GOVERNANCE_ABI
+  }
+} as const;
+
+// Type definitions
+export type ContractAddresses = typeof DEPLOYED_ADDRESSES;
+export type ContractConfigs = typeof CONTRACT_CONFIGS;
+
+// Network configuration
 export const NETWORK_CONFIG = {
   chainId: "0x539", // 1337 in hex
   chainName: "Ganache",
@@ -17,20 +36,28 @@ export const NETWORK_CONFIG = {
     name: "ETH",
     symbol: "ETH",
     decimals: 18
-  },
-  blockExplorerUrls: []
-};
+  }
+} as const;
 
+// Get contract instances with proper error handling
 export const getVotingContract = async () => {
   try {
     const provider = await getProvider();
+    if (!DEPLOYED_ADDRESSES.VOTING_GOVERNANCE) {
+      throw new Error('Voting governance contract address not configured');
+    }
     return new ethers.Contract(
-      VOTING_GOVERNANCE,
-      VotingGovernanceABI.abi,
+      DEPLOYED_ADDRESSES.VOTING_GOVERNANCE,
+      VOTING_GOVERNANCE_ABI,
       provider
     );
   } catch (error) {
     console.error('Error getting voting contract:', error);
-    return null;
+    throw error;
   }
+};
+
+// Contract ABIs
+export const CONTRACT_ABI = {
+  VOTING_GOVERNANCE: VOTING_GOVERNANCE_ABI
 }; 

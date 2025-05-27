@@ -45,27 +45,9 @@ A decentralized blockchain-based charity platform using DAO (Decentralized Auton
 
 ## Running the Application
 
-You can choose between two local blockchain options:
+You can use either Ganache (recommended for testing) or Hardhat Network (for development):
 
-### Option 1: Using Hardhat Network
-
-1. Start a local Hardhat node (in the main directory):
-   ```bash
-   npx hardhat node
-   ```
-
-2. Deploy the contracts (in a new terminal):
-   ```bash
-   npx hardhat run scripts/deploy.ts --network localhost
-   ```
-
-3. Connect MetaMask to the Hardhat network:
-   - Network Name: Localhost 8545
-   - RPC URL: http://127.0.0.1:8545/
-   - Chain ID: 31337
-   - Currency Symbol: ETH
-
-### Option 2: Using Ganache
+### Option 1: Using Ganache (Recommended for Testing)
 
 1. Install and Start Ganache:
    - Download Ganache from [https://trufflesuite.com/ganache/](https://trufflesuite.com/ganache/)
@@ -94,6 +76,30 @@ You can choose between two local blockchain options:
    - Chain ID: 1337
    - Currency Symbol: ETH
 
+5. Import Test Accounts:
+   - In Ganache UI, click on the key icon next to any account
+   - Copy the private key
+   - In MetaMask, click "Import Account" and paste the private key
+   - You now have access to pre-funded test accounts
+
+### Option 2: Using Hardhat Network (For Development)
+
+1. Start a local Hardhat node (in the main directory):
+   ```bash
+npx hardhat node
+   ```
+
+2. Deploy the contracts (in a new terminal):
+   ```bash
+   npx hardhat run scripts/deploy.ts --network localhost
+   ```
+
+3. Connect MetaMask to the Hardhat network:
+   - Network Name: Localhost 8545
+   - RPC URL: http://127.0.0.1:8545/
+   - Chain ID: 31337
+   - Currency Symbol: ETH
+
 ### Starting the Frontend
 
 1. Start the frontend application:
@@ -103,6 +109,20 @@ You can choose between two local blockchain options:
    ```
 
 2. The application will automatically connect to whichever network you've configured in MetaMask
+
+### Network Comparison
+
+#### Ganache (Testing)
+- Persistent blockchain state between restarts
+- Visual interface for monitoring accounts and transactions
+- Easy account management and private key access
+- Better for testing and demonstration
+
+#### Hardhat Network (Development)
+- Fresh blockchain state on each restart
+- Better debugging capabilities
+- Console output for contract interactions
+- Ideal for development and contract testing
 
 ## Using the Platform
 

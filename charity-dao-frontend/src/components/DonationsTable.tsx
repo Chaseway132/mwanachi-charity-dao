@@ -1,10 +1,46 @@
 import React, { useState, useEffect } from 'react';
 import { formatEther } from 'ethers';
-import { toast } from 'react-hot-toast';
+import { toast } from 'react-toastify';
 import { getFromIPFS } from '../utils/ipfs';
 import type { Donation } from '../types/donation';
 
 const DONATION_METADATA_KEY = 'donation_metadata_mapping';
+
+// Add a safe toast utility function to prevent runtime errors
+const safeToast = {
+  error: (message: string) => {
+    try {
+      toast.error(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  },
+  success: (message: string) => {
+    try {
+      toast.success(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  },
+  info: (message: string) => {
+    try {
+      toast.info(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  },
+  warning: (message: string) => {
+    try {
+      toast.warning(message);
+    } catch (e) {
+      console.error('Toast error:', e);
+      console.log('Toast message was:', message);
+    }
+  }
+};
 
 // Function to get all donation metadata
 const getAllDonationMetadata = (): Record<string, string> => {
@@ -124,7 +160,7 @@ const DonationsTable: React.FC<DonationsTableProps> = ({ donations }): JSX.Eleme
             }
           } catch (error) {
             console.error(`Failed to load metadata for donation ${donation.id}:`, error);
-            toast.error('Failed to load donation metadata');
+            safeToast.error('Failed to load donation metadata');
           } finally {
             setLoadingStates(prev => ({ ...prev, [ipfsHash]: false }));
           }
@@ -169,10 +205,10 @@ const DonationsTable: React.FC<DonationsTableProps> = ({ donations }): JSX.Eleme
   const copyToClipboard = async (text: string, type: string) => {
     try {
       await navigator.clipboard.writeText(text);
-      toast.success(`${type} copied to clipboard!`);
+      safeToast.success(`${type} copied to clipboard!`);
     } catch (err) {
       console.error('Failed to copy:', err);
-      toast.error('Failed to copy to clipboard');
+      safeToast.error('Failed to copy to clipboard');
     }
   };
 
