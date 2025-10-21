@@ -1,33 +1,39 @@
-# Charity DAO Platform
+# 🌍 Mwanachi Charity DAO
 
-A decentralized blockchain-based charity platform using DAO (Decentralized Autonomous Organization) and smart contracts for transparency and trust.
+**Blockchain-based charitable platform for Kenya with M-Pesa integration and transparent fund allocation**
 
-## Features
+> **Mission:** Solving Kenya's paybill problem through transparency and trust. "We don't want people sitting behind the tent and eating all the funds while they give us funny stories."
 
-- **Smart Contract-Based Donations**: Secure and transparent donation handling
+## ✨ Features
+
+- **Smart Contract-Based Donations**: Secure and transparent donation handling on Polygon
+- **M-Pesa Integration**: Kenyan mobile payment support with STK Push
+- **Special Donations System**: Emergency fundraising campaigns with real-time tracking
 - **DAO Governance**: Community-driven decision making for fund allocation
 - **IPFS Integration**: Decentralized storage for proposal and donation metadata
 - **Proposal System**: Create, vote on, approve, and execute charitable proposals
 - **Treasury Management**: Transparent fund tracking and allocation
 - **Web3 Integration**: Seamless blockchain interaction through MetaMask
+- **Real-time Dashboard**: Live donation updates and fund flow analytics
 
 ## Prerequisites
 
-- Node.js (v14 or higher)
+- Node.js 16+
 - npm or yarn
-- MetaMask browser extension
+- MetaMask browser extension (optional, for blockchain features)
 - Git
-- Ganache (optional, for alternative local blockchain)
+- Safaricom Developer Account (for M-Pesa integration)
+- Pinata Account (for IPFS storage)
 
 ## Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/Chaseway132/Dissertation_Blockchain_Prototype.git
-   cd Dissertation_Blockchain_Prototype
+   git clone https://github.com/Chaseway132/mwanachi-charity-dao.git
+   cd mwanachi-charity-dao
    ```
 
-2. Install dependencies for smart contracts:
+2. Install dependencies:
    ```bash
    npm install
    ```
@@ -38,12 +44,40 @@ A decentralized blockchain-based charity platform using DAO (Decentralized Auton
    npm install
    ```
 
-4. Create a `.env.local` file in the `charity-dao-frontend` directory with your Pinata JWT:
-   ```
-   REACT_APP_PINATA_JWT=your_pinata_jwt_here
+4. Create a `.env` file in the root directory:
+   ```bash
+   cp .env.example .env
    ```
 
+5. Fill in your environment variables:
+   - `REACT_APP_PINATA_JWT` - Get from https://app.pinata.cloud/keys
+   - `MPESA_CONSUMER_KEY` - Get from https://developer.safaricom.co.ke/
+   - `MPESA_CONSUMER_SECRET` - Get from Safaricom Developer Portal
+   - `PRIVATE_KEY` - Your MetaMask private key (for deployment)
+
 ## Running the Application
+
+### Quick Start (Recommended)
+
+```bash
+# Start backend server
+cd backend
+node server.js
+
+# In another terminal, start frontend
+cd charity-dao-frontend
+npm start
+```
+
+Or use the provided scripts:
+- **Windows (PowerShell):** `.\start-servers.ps1`
+- **Windows (CMD):** `start-servers.bat`
+
+The application will be available at:
+- Frontend: http://localhost:3000
+- Backend: http://localhost:5000
+
+### Advanced Setup
 
 You can use either Ganache (recommended for testing) or Hardhat Network (for development):
 
@@ -126,12 +160,30 @@ npx hardhat node
 
 ## Using the Platform
 
-### Making Donations
+### 📱 M-Pesa Donations (Kenyan Mobile Payments)
+1. Navigate to the Donations page
+2. Select the **M-Pesa** tab
+3. Enter your Kenyan phone number (254...)
+4. Enter the donation amount (1-150,000 KES)
+5. Click "Pay with M-Pesa"
+6. Confirm the STK Push prompt on your phone
+7. Your donation is recorded on-chain
+
+### 🆘 Special Causes (Emergency Fundraising)
+1. Click the **🆘 Special Causes** button in navigation
+2. Browse active emergency campaigns
+3. Click on a campaign to view details
+4. Choose payment method (M-Pesa or Crypto)
+5. Make your donation
+6. See real-time updates on the campaign
+
+### Making Donations (Crypto)
 1. Connect your MetaMask wallet
 2. Navigate to the Donations page
-3. Enter the donation amount
-4. Confirm the transaction in MetaMask
-5. Your donation will be recorded on-chain and metadata stored on IPFS
+3. Select the **Crypto** tab
+4. Enter the donation amount in ETH
+5. Confirm the transaction in MetaMask
+6. Your donation will be recorded on-chain and metadata stored on IPFS
 
 ### Creating Proposals
 1. Go to the Proposals page

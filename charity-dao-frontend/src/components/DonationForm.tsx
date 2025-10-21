@@ -5,6 +5,7 @@ import { parseEther } from 'ethers';
 import { getCharityDAOPlatformContract } from '../utils/contracts';
 import { uploadDonationToIPFS } from '../utils/ipfs';
 import { handleDonationError, ErrorType } from '../utils/errorHandler';
+import MPesaPaymentForm from './MPesaPaymentForm';
 
 // Constants for localStorage
 const DONATION_METADATA_KEY = 'donation_ipfs_mapping';
@@ -35,6 +36,7 @@ const DonationForm: React.FC<DonationFormProps> = ({ onDonationSuccess }) => {
   const [amount, setAmount] = useState('');
   const [description, setDescription] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'crypto' | 'mpesa'>('crypto');
 
   const handleDonation = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -176,50 +178,97 @@ const DonationForm: React.FC<DonationFormProps> = ({ onDonationSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleDonation}>
-      <div className="mb-4">
-        <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-          Amount (ETH)
-        </label>
-        <input
-          type="number"
-          id="amount"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded"
-          placeholder="0.0"
-          step="0.01"
-          min="0"
-          required
-          disabled={isLoading}
-        />
-      </div>
-
-      <div className="mb-4">
-        <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-          Description (Optional)
-        </label>
-        <textarea
-          id="description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full p-2 border border-gray-300 rounded"
-          placeholder=""
-          rows={4}
-          disabled={isLoading}
-        />
-      </div>
-
-      <div className="flex justify-end">
+    <div>
+      {/* Payment Method Tabs */}
+      <div className="flex gap-2 mb-6 border-b border-gray-200">
         <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+          onClick={() => setPaymentMethod('crypto')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            paymentMethod === 'crypto'
+              ? 'text-blue-600 border-b-2 border-blue-600'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
         >
-          {isLoading ? 'Processing...' : 'Donate'}
+          💳 Crypto (ETH)
+        </button>
+        <button
+          onClick={() => setPaymentMethod('mpesa')}
+          className={`px-4 py-2 font-medium transition-colors ${
+            paymentMethod === 'mpesa'
+              ? 'text-green-600 border-b-2 border-green-600'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          📱 M-Pesa
         </button>
       </div>
-    </form>
+
+      {/* Crypto Payment Form */}
+      {paymentMethod === 'crypto' && (
+        <form onSubmit={handleDonation}>
+          <div className="mb-4">
+            <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
+              Amount (ETH)
+            </label>
+            <input
+              type="number"
+              id="amount"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded"
+              placeholder="0.0"
+              step="0.01"
+              min="0"
+              required
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+              Description (Optional)
+            </label>
+            <textarea
+              id="description"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded"
+              placeholder=""
+              rows={4}
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="flex justify-end">
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded"
+            >
+              {isLoading ? 'Processing...' : 'Donate'}
+            </button>
+          </div>
+        </form>
+      )}
+
+      {/* M-Pesa Payment Form */}
+      {paymentMethod === 'mpesa' && (
+        <MPesaPaymentForm
+          onPaymentInitiated={(data) => {
+            console.log('M-Pesa payment initiated:', data);
+          }}
+          onPaymentSuccess={(data) => {
+            console.log('M-Pesa payment successful:', data);
+            if (onDonationSuccess) {
+              onDonationSuccess();
+            }
+          }}
+          onPaymentError={(error) => {
+            console.error('M-Pesa payment error:', error);
+          }}
+        />
+      )}
+    </div>
   );
 };
 

@@ -44,6 +44,8 @@ const safeToast = {
 const TreasuryStatus: React.FC = () => {
   const [platformBalance, setPlatformBalance] = useState('0.0');
   const [fundBalance, setFundBalance] = useState('0.0');
+  const [mpesaBalance, setMpesaBalance] = useState('0.0');
+  const [mpesaDonationCount, setMpesaDonationCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
 
   const loadBalances = async () => {
@@ -67,6 +69,22 @@ const TreasuryStatus: React.FC = () => {
         const fundBalanceWei = await provider.getBalance(FUND_ALLOCATION);
         setFundBalance(ethers.formatEther(fundBalanceWei));
       }
+
+      // Get M-Pesa donations
+      try {
+        const response = await fetch('http://localhost:5000/api/donations');
+        if (response.ok) {
+          const data = await response.json();
+          const mpesaDonations = data.donations.filter((d: any) => d.mpesaReceiptNumber);
+          const totalMpesa = mpesaDonations.reduce((sum: number, d: any) => sum + (d.amount || 0), 0);
+          setMpesaBalance(totalMpesa.toFixed(2));
+          setMpesaDonationCount(mpesaDonations.length);
+        }
+      } catch (error) {
+        console.warn('Error loading M-Pesa donations:', error);
+        setMpesaBalance('0.0');
+        setMpesaDonationCount(0);
+      }
     } catch (error) {
       console.error('Error loading balances:', error);
       safeToast.error('Failed to load treasury balances');
@@ -77,6 +95,9 @@ const TreasuryStatus: React.FC = () => {
 
   useEffect(() => {
     loadBalances();
+    // Refresh every 30 seconds
+    const interval = setInterval(loadBalances, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -95,26 +116,34 @@ const TreasuryStatus: React.FC = () => {
             </svg>
           </button>
         </div>
-        
-        <div className="flex gap-8 items-start">
+
+        <div className="flex gap-6 items-start flex-wrap">
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-1">Platform Balance</p>
             <p className="text-xl font-medium text-blue-600">{platformBalance} ETH</p>
             <p className="text-xs text-gray-400">(Temporary holding)</p>
           </div>
-          
+
           <div className="text-center">
             <p className="text-sm text-gray-500 mb-1">Fund Balance</p>
             <p className="text-xl font-medium text-green-600">{fundBalance} ETH</p>
             <p className="text-xs text-gray-400">(Available for proposals)</p>
           </div>
+
+          <div className="text-center">
+            <p className="text-sm text-gray-500 mb-1">M-Pesa Balance</p>
+            <p className="text-xl font-medium text-orange-600">KES {mpesaBalance}</p>
+            <p className="text-xs text-gray-400">({mpesaDonationCount} donations)</p>
+          </div>
         </div>
       </div>
       
       <ul className="list-disc ml-5 text-sm text-gray-600 space-y-1 mt-6">
-        <li>Platform Balance: Temporary holding for incoming donations</li>
-        <li>Fund Balance: Available for executing approved proposals</li>
+        <li>Platform Balance: Temporary holding for incoming ETH donations</li>
+        <li>Fund Balance: Available for executing approved proposals (ETH)</li>
+        <li>M-Pesa Balance: Total M-Pesa donations received (KES)</li>
         <li>Funds are automatically transferred to the fund contract when donations are received</li>
+        <li>M-Pesa donations are tracked separately and can be converted to blockchain assets</li>
       </ul>
     </div>
   );

@@ -21,6 +21,7 @@ import Help from './components/Help';
 import Footer from './components/Footer';
 import IPFSTestPanel from './components/IPFSTestPanel';
 import FailedUploadsViewer from './components/FailedUploadsViewer';
+import SpecialDonationsList from './components/SpecialDonationsList';
 // Import components but comment them out until they're needed
 // import KYCForm from './components/KYCForm';
 // import SettingsPanel from './components/SettingsPanel';
@@ -72,7 +73,7 @@ const safeToast = {
 };
 
 // Define navigation tabs
-type Tab = 'dashboard' | 'proposals' | 'donations' | 'beneficiaries' | 'signers' | 'help';
+type Tab = 'dashboard' | 'proposals' | 'donations' | 'special-donations' | 'beneficiaries' | 'signers' | 'help';
 
 const AppContent: React.FC = () => {
   const { setConnectedAddress } = useProposals();
@@ -91,11 +92,16 @@ const AppContent: React.FC = () => {
       try {
         // Check if MetaMask is installed
         if (window.ethereum) {
-          const provider = new ethers.BrowserProvider(window.ethereum);
-          const accounts = await provider.listAccounts();
+          try {
+            const provider = new ethers.BrowserProvider(window.ethereum);
+            const accounts = await provider.listAccounts();
 
-          if (accounts.length > 0) {
-            setWalletAddress(accounts[0].address);
+            if (accounts.length > 0) {
+              setWalletAddress(accounts[0].address);
+            }
+          } catch (metamaskError) {
+            // MetaMask not connected or not available - this is OK
+            console.log('MetaMask not connected (this is normal):', metamaskError instanceof Error ? metamaskError.message : 'Unknown error');
           }
         }
       } catch (error) {
@@ -120,7 +126,7 @@ const AppContent: React.FC = () => {
         const owner = await proposalContract.owner();
         setIsOwner(walletAddress.toLowerCase() === owner.toLowerCase());
       } catch (error) {
-        console.error('Error checking owner status:', error);
+        console.error('Error checking owner status (this is normal if MetaMask is not connected):', error instanceof Error ? error.message : 'Unknown error');
         setIsOwner(false);
       }
     };
@@ -231,8 +237,9 @@ const AppContent: React.FC = () => {
 
       setDonations(formattedDonations);
     } catch (error) {
-      console.error('Error loading donations:', error);
-      safeToast.error('Failed to load donations');
+      console.log('Note: Blockchain connection not available (this is normal if MetaMask is not connected). Special Donations tab will still work!');
+      console.error('Error loading donations from blockchain:', error instanceof Error ? error.message : 'Unknown error');
+      // Don't show error toast - this is expected if MetaMask is not connected
     } finally {
       setIsLoading(false);
     }
@@ -358,6 +365,13 @@ const AppContent: React.FC = () => {
           </>
         );
 
+      case 'special-donations':
+        return (
+          <>
+            <SpecialDonationsList />
+          </>
+        );
+
       case 'beneficiaries':
         return (
           <>
@@ -426,6 +440,12 @@ const AppContent: React.FC = () => {
                 className={`px-3 py-2 rounded-md ${activeTab === 'donations' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Donations
+              </button>
+              <button
+                onClick={() => setActiveTab('special-donations')}
+                className={`px-3 py-2 rounded-md ${activeTab === 'special-donations' ? 'bg-orange-100 text-orange-900' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                🆘 Special Causes
               </button>
               <button
                 onClick={() => setActiveTab('beneficiaries')}
@@ -500,6 +520,8 @@ const AppContent: React.FC = () => {
           {activeTab === 'dashboard' && 'Dashboard'}
           {activeTab === 'proposals' && 'Proposals'}
           {activeTab === 'donations' && 'Donations'}
+          {activeTab === 'special-donations' && '🆘 Special Causes'}
+          {activeTab === 'beneficiaries' && 'Fund Recipients'}
           {activeTab === 'signers' && 'Signers & Governance'}
           {activeTab === 'help' && 'Help & Documentation'}
         </h2>
