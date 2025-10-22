@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { checkAdminToken } = require('../middleware/adminAuth');
 
 // In-memory storage for special donations campaigns
 // TODO: Replace with database (MongoDB/PostgreSQL)
@@ -269,9 +270,89 @@ router.post('/:id/update', (req, res) => {
     });
   } catch (error) {
     console.error('Error posting update:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: error.message 
+      error: error.message
+    });
+  }
+});
+
+// POST /api/special-donations - Create new campaign (ADMIN ONLY)
+router.post('/', checkAdminToken, (req, res) => {
+  try {
+    const {
+      title,
+      description,
+      beneficiaryName,
+      beneficiaryPhone,
+      targetAmount,
+      deadline,
+      location,
+      category,
+      documents
+    } = req.body;
+
+    // Validate required fields
+    if (!title || !description || !beneficiaryName || !targetAmount) {
+      return res.status(400).json({
+        success: false,
+        error: 'Missing required fields: title, description, beneficiaryName, targetAmount'
+      });
+    }
+
+    // Generate new campaign ID
+    const newId = Math.max(...campaigns.map(c => c.id), 0) + 1;
+
+    // Create new campaign
+    const newCampaign = {
+      id: newId,
+      title,
+      description,
+      beneficiaryName,
+      beneficiaryPhone: beneficiaryPhone || '',
+      targetAmount: parseFloat(targetAmount),
+      currentAmount: 0,
+      totalDonors: 0,
+      deadline: deadline || Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days default
+      verified: true, // Admin-created campaigns are auto-verified
+      closed: false,
+      location: location || '',
+      category: category || 'general',
+      createdAt: Date.now(),
+      createdBy: req.admin.walletAddress,
+      createdByType: 'admin',
+      authorityTier: 'admin',
+      status: 'active',
+      updates: [
+        {
+          id: 1,
+          title: 'Campaign Created',
+          content: `Campaign created by admin: ${req.admin.walletAddress}`,
+          timestamp: Date.now(),
+          ipfsHash: null
+        }
+      ],
+      donations: [],
+      documents: documents || []
+    };
+
+    campaigns.push(newCampaign);
+
+    // Track in analytics
+    if (global.analyticsData) {
+      global.analyticsData.campaignsCreated++;
+    }
+
+    res.status(201).json({
+      success: true,
+      message: 'Campaign created successfully',
+      campaign: newCampaign
+    });
+  } catch (error) {
+    console.error('Error creating campaign:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });

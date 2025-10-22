@@ -22,6 +22,8 @@ import Footer from './components/Footer';
 import IPFSTestPanel from './components/IPFSTestPanel';
 import FailedUploadsViewer from './components/FailedUploadsViewer';
 import SpecialDonationsList from './components/SpecialDonationsList';
+import SpecialDonationDetail from './components/SpecialDonationDetail';
+import AdminDashboard from './components/AdminDashboard';
 // Import components but comment them out until they're needed
 // import KYCForm from './components/KYCForm';
 // import SettingsPanel from './components/SettingsPanel';
@@ -73,7 +75,7 @@ const safeToast = {
 };
 
 // Define navigation tabs
-type Tab = 'dashboard' | 'proposals' | 'donations' | 'special-donations' | 'beneficiaries' | 'signers' | 'help';
+type Tab = 'dashboard' | 'proposals' | 'donations' | 'special-donations' | 'special-donation-detail' | 'beneficiaries' | 'signers' | 'admin' | 'help';
 
 const AppContent: React.FC = () => {
   const { setConnectedAddress } = useProposals();
@@ -85,6 +87,7 @@ const AppContent: React.FC = () => {
   const [walletAddress, setWalletAddress] = useState<string>('');
   const [connectionLoading, setConnectionLoading] = useState(false);
   const [isOwner, setIsOwner] = useState(false);
+  const [selectedCampaignId, setSelectedCampaignId] = useState<number | null>(null);
 
   // Check if wallet is already connected on load
   useEffect(() => {
@@ -368,7 +371,22 @@ const AppContent: React.FC = () => {
       case 'special-donations':
         return (
           <>
-            <SpecialDonationsList />
+            <SpecialDonationsList onSelectCampaign={(id) => {
+              setSelectedCampaignId(id);
+              setActiveTab('special-donation-detail');
+            }} />
+          </>
+        );
+
+      case 'special-donation-detail':
+        return (
+          <>
+            {selectedCampaignId && (
+              <SpecialDonationDetail
+                campaignId={selectedCampaignId}
+                onBack={() => setActiveTab('special-donations')}
+              />
+            )}
           </>
         );
 
@@ -385,6 +403,13 @@ const AppContent: React.FC = () => {
           <>
             <h2 className="text-xl font-semibold mb-4">Signers Management</h2>
             <SignerManagement />
+          </>
+        );
+
+      case 'admin':
+        return (
+          <>
+            <AdminDashboard onLogout={() => setActiveTab('dashboard')} />
           </>
         );
 
@@ -415,7 +440,6 @@ const AppContent: React.FC = () => {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
-      <ToastContainer position="top-right" />
       {/* Navigation Header */}
       <header className="bg-white shadow-sm">
         <div className="container mx-auto px-4 py-3">
@@ -458,6 +482,12 @@ const AppContent: React.FC = () => {
                 className={`px-3 py-2 rounded-md ${activeTab === 'signers' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Signers
+              </button>
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`px-3 py-2 rounded-md ${activeTab === 'admin' ? 'bg-red-100 text-red-900' : 'text-gray-600 hover:bg-gray-50'}`}
+              >
+                🔐 Admin
               </button>
             </nav>
 
@@ -523,6 +553,7 @@ const AppContent: React.FC = () => {
           {activeTab === 'special-donations' && '🆘 Special Causes'}
           {activeTab === 'beneficiaries' && 'Fund Recipients'}
           {activeTab === 'signers' && 'Signers & Governance'}
+          {activeTab === 'admin' && '🔐 Admin Dashboard'}
           {activeTab === 'help' && 'Help & Documentation'}
         </h2>
 
@@ -539,7 +570,18 @@ const App: React.FC = () => {
   return (
     <ProposalProvider>
       <div className="min-h-screen bg-gray-100">
-        <ToastContainer position="top-right" autoClose={5000} />
+        <ToastContainer
+          position="top-right"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+          theme="light"
+        />
         <AppContent />
       </div>
     </ProposalProvider>

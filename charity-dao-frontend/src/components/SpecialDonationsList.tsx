@@ -16,7 +16,11 @@ interface Campaign {
   category: string;
 }
 
-const SpecialDonationsList: React.FC = () => {
+interface SpecialDonationsListProps {
+  onSelectCampaign?: (id: number) => void;
+}
+
+const SpecialDonationsList: React.FC<SpecialDonationsListProps> = ({ onSelectCampaign }) => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'active' | 'completed'>('all');
@@ -200,12 +204,12 @@ const SpecialDonationsList: React.FC = () => {
               </div>
 
               {/* Button */}
-              <a
-                href={`/special-donations/${campaign.id}`}
-                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition block text-center"
+              <button
+                onClick={() => onSelectCampaign?.(campaign.id)}
+                className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-4 rounded-lg transition"
               >
                 View & Donate
-              </a>
+              </button>
             </div>
           </div>
         ))}

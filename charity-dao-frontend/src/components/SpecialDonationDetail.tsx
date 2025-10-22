@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Heart, MapPin, Users, Clock, CheckCircle, Share2, ExternalLink } from 'lucide-react';
-import { useParams, useNavigate } from 'react-router-dom';
 import SpecialDonationForm from './SpecialDonationForm';
+import CommentSection from './CommentSection';
 
 interface Campaign {
   id: number;
@@ -35,9 +35,12 @@ interface Update {
   timestamp: number;
 }
 
-const SpecialDonationDetail: React.FC = () => {
-  const { id } = useParams<{ id: string }>();
-  const navigate = useNavigate();
+interface SpecialDonationDetailProps {
+  campaignId: number;
+  onBack: () => void;
+}
+
+const SpecialDonationDetail: React.FC<SpecialDonationDetailProps> = ({ campaignId, onBack }) => {
   const [campaign, setCampaign] = useState<Campaign | null>(null);
   const [donations, setDonations] = useState<Donation[]>([]);
   const [updates, setUpdates] = useState<Update[]>([]);
@@ -48,14 +51,14 @@ const SpecialDonationDetail: React.FC = () => {
     fetchCampaignDetails();
     const interval = setInterval(fetchCampaignDetails, 10000); // Refresh every 10 seconds
     return () => clearInterval(interval);
-  }, [id]);
+  }, [campaignId]);
 
   const fetchCampaignDetails = async () => {
     try {
       const [campaignRes, donationsRes, updatesRes] = await Promise.all([
-        fetch(`http://localhost:5000/api/special-donations/${id}`),
-        fetch(`http://localhost:5000/api/special-donations/${id}/donations`),
-        fetch(`http://localhost:5000/api/special-donations/${id}/updates`)
+        fetch(`http://localhost:5000/api/special-donations/${campaignId}`),
+        fetch(`http://localhost:5000/api/special-donations/${campaignId}/donations`),
+        fetch(`http://localhost:5000/api/special-donations/${campaignId}/updates`)
       ]);
 
       const campaignData = await campaignRes.json();
@@ -123,7 +126,7 @@ const SpecialDonationDetail: React.FC = () => {
     <div className="max-w-6xl mx-auto px-4 py-8">
       {/* Back Button */}
       <button
-        onClick={() => navigate('/special-donations')}
+        onClick={onBack}
         className="flex items-center text-orange-500 hover:text-orange-600 mb-6 font-semibold"
       >
         <ArrowLeft className="w-5 h-5 mr-2" />
@@ -201,10 +204,13 @@ const SpecialDonationDetail: React.FC = () => {
             </div>
           </div>
 
+          {/* Comments Section */}
+          <CommentSection campaignId={campaign.id} type="campaign" />
+
           {/* Recent Donations */}
           <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Recent Donations</h2>
-            
+
             {donations.length > 0 ? (
               <div className="space-y-3">
                 {donations.slice(0, 5).map(donation => (
@@ -227,9 +233,9 @@ const SpecialDonationDetail: React.FC = () => {
           </div>
 
           {/* Updates */}
-          <div className="bg-white rounded-lg shadow-lg p-6">
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Campaign Updates</h2>
-            
+
             {updates.length > 0 ? (
               <div className="space-y-4">
                 {updates.map(update => (
