@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug Proposal Execution</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    #output {
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .info {
+      background-color: #e7f3fe;
+      border-left: 6px solid #2196F3;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .error {
+      background-color: #ffebee;
+      border-left: 6px solid #f44336;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .success {
+      background-color: #e8f5e9;
+      border-left: 6px solid #4caf50;
+      padding: 10px;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Debug Proposal Execution</h1>
+  <div class="info">
+    <p>This tool helps debug proposal execution issues by checking the exact state on the blockchain.</p>
+    <p><a href="DEBUG-GUIDE.md" target="_blank">Read the debug guide</a> for detailed instructions on troubleshooting execution issues.</p>
+  </div>
+
+  <div>
+    <label for="proposalId">Proposal ID:</label>
+    <input type="number" id="proposalId" value="1" min="1" step="1">
+    <button id="debugButton">Debug Proposal</button>
+    <button id="forceExecuteButton">Force Execute</button>
+  </div>
+
+  <div id="output">Logs will appear here...</div>
+
+  <script>
+    // Function to log to the output div
+    function log(message, type = 'info') {
+      const output = document.getElementById('output');
+      const timestamp = new Date().toLocaleTimeString();
+
+      let className = '';
+      if (type === 'error') className = 'error';
+      if (type === 'success') className = 'success';
+
+      const logEntry = document.createElement('div');
+      logEntry.className = className;
+      logEntry.textContent = `[${timestamp}] ${message}`;
+
+      output.appendChild(logEntry);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // Function to debug the proposal
+    async function debugProposal() {
+      try {
+        log('Connecting to MetaMask...');
+
+        // Check if MetaMask is available
+        if (typeof window.ethereum === 'undefined') {
+          log('MetaMask is not installed!', 'error');
+          return;
+        }
+
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        log('Connected to MetaMask', 'success');
+
+        // Get the proposal ID
+        const proposalId = document.getElementById('proposalId').value;
+        log(`Debugging proposal ID: ${proposalId}`);
+
+        // Get the provider and signer
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        log(`Using account: ${address}`);
+
+        // Get contract addresses
+        const module = await import('../src/config/contracts.js');
+        const PROPOSAL_MANAGEMENT = module.PROPOSAL_MANAGEMENT;
+        const FUND_ALLOCATION = module.FUND_ALLOCATION;
+        const VOTING_GOVERNANCE = module.VOTING_GOVERNANCE;
+
+        log(`Proposal Management contract: ${PROPOSAL_MANAGEMENT}`);
+        log(`Fund Allocation contract: ${FUND_ALLOCATION}`);
+        log(`Voting Governance contract: ${VOTING_GOVERNANCE}`);
+
+        // Get contract ABIs
+        const pmAbi = await import('../src/config/ProposalManagement.json');
+        const faAbi = await import('../src/config/FundAllocation.json');
+        const vgAbi = await import('../src/config/VotingGovernance.json');
+
+        // Create contract instances
+        const proposalContract = new ethers.Contract(
+          PROPOSAL_MANAGEMENT,
+          pmAbi.abi,
+          provider
+        );
+
+        const fundContract = new ethers.Contract(
+          FUND_ALLOCATION,
+          faAbi.abi,
+          provider
+        );
+
+        const votingContract = new ethers.Contract(
+          VOTING_GOVERNANCE,
+          vgAbi.abi,
+          provider
+        );
+
+        // Get current block timestamp
+        const blockNumber = await provider.getBlockNumber();
+        const block = await provider.getBlock(blockNumber);
+        const blockTimestamp = block.timestamp;
+        log(`Current block timestamp: ${blockTimestamp} (${new Date(Number(blockTimestamp) * 1000).toLocaleString()})`);
+
+        // Get proposal details
+        log('Getting proposal details...');
+        const proposal = await proposalContract.getProposalById(BigInt(proposalId));
+
+        // Format the proposal details
+        const formattedProposal = {
+          id: proposalId,
+          description: proposal.description,
+          amount: ethers.formatEther(proposal.amount || proposal.amountRequested),
+          recipient: proposal.recipient,
+          votesFor: Number(proposal.votesFor),
+          votesAgainst: Number(proposal.votesAgainst),
+          approved: proposal.approved,
+          executed: proposal.executed,
+          creationTime: Number(proposal.creationTime),
+          executionTime: Number(proposal.executionTime),
+          creationTimeFormatted: new Date(Number(proposal.creationTime) * 1000).toLocaleString(),
+          executionTimeFormatted: proposal.executionTime > 0
+            ? new Date(Number(proposal.executionTime) * 1000).toLocaleString()
+            : 'Not set'
+        };
+
+        log(`Proposal details: ${JSON.stringify(formattedProposal, null, 2)}`);
+
+        // Check time lock status
+        if (proposal.executionTime > 0) {
+          const timeDiff = Number(blockTimestamp) - Number(proposal.executionTime);
+          log(`Time difference (block.timestamp - executionTime): ${timeDiff} seconds`);
+
+          if (blockTimestamp >= proposal.executionTime) {
+            log('Time lock period has completed', 'success');
+          } else {
+            log(`Time lock period has not completed. Need to wait ${Number(proposal.executionTime) - Number(blockTimestamp)} more seconds`, 'error');
+          }
+        } else {
+          log('Execution time not set', 'error');
+        }
+
+        // Check if proposal can be executed
+        try {
+          const canExecute = await votingContract.canExecute(BigInt(proposalId));
+          log(`Can execute according to VotingGovernance: ${canExecute}`, canExecute ? 'success' : 'error');
+        } catch (error) {
+          log(`Error checking if proposal can be executed: ${error.message}`, 'error');
+        }
+
+        // Check if proposal is approved
+        log(`Is proposal approved: ${proposal.approved}`, proposal.approved ? 'success' : 'error');
+
+        // Check if proposal is executed
+        log(`Is proposal executed: ${proposal.executed}`, proposal.executed ? 'success' : 'error');
+
+        // Check fund contract balance
+        const balance = await provider.getBalance(FUND_ALLOCATION);
+        log(`Fund contract balance: ${ethers.formatEther(balance)} ETH`,
+          balance >= (proposal.amount || proposal.amountRequested) ? 'success' : 'error');
+
+        // Check if user is owner
+        const owner = await proposalContract.owner();
+        const isOwner = owner.toLowerCase() === address.toLowerCase();
+        log(`Contract owner: ${owner}`);
+        log(`Is current user the owner: ${isOwner}`, isOwner ? 'success' : 'error');
+
+        // Check if the FundAllocation contract is authorized to call markProposalExecuted
+        try {
+          const isAuthorized = await proposalContract.isAuthorized(FUND_ALLOCATION);
+          log(`Is FundAllocation authorized: ${isAuthorized}`, isAuthorized ? 'success' : 'error');
+        } catch (error) {
+          log(`Error checking if FundAllocation is authorized: ${error.message}`, 'error');
+
+          // Try alternative method
+          try {
+            const platformContract = await fundContract.platformContract();
+            log(`Platform contract set in FundAllocation: ${platformContract}`);
+          } catch (error) {
+            log(`Error getting platform contract: ${error.message}`, 'error');
+          }
+        }
+
+        log('Debug complete!', 'success');
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        console.error('Error debugging proposal:', error);
+      }
+    }
+
+    // Function to force execute the proposal
+    async function forceExecute() {
+      try {
+        log('Connecting to MetaMask...');
+
+        // Check if MetaMask is available
+        if (typeof window.ethereum === 'undefined') {
+          log('MetaMask is not installed!', 'error');
+          return;
+        }
+
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        log('Connected to MetaMask', 'success');
+
+        // Get the proposal ID
+        const proposalId = document.getElementById('proposalId').value;
+        log(`Force executing proposal ID: ${proposalId}`);
+
+        // Get the provider and signer
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        log(`Using account: ${address}`);
+
+        // Get contract addresses
+        const module = await import('../src/config/contracts.js');
+        const PROPOSAL_MANAGEMENT = module.PROPOSAL_MANAGEMENT;
+        const FUND_ALLOCATION = module.FUND_ALLOCATION;
+
+        // Get contract ABIs
+        const pmAbi = await import('../src/config/ProposalManagement.json');
+        const faAbi = await import('../src/config/FundAllocation.json');
+
+        // Create contract instances
+        const proposalContract = new ethers.Contract(
+          PROPOSAL_MANAGEMENT,
+          pmAbi.abi,
+          provider
+        ).connect(signer);
+
+        const fundContract = new ethers.Contract(
+          FUND_ALLOCATION,
+          faAbi.abi,
+          provider
+        ).connect(signer);
+
+        // Get proposal details
+        const proposal = await proposalContract.getProposalById(BigInt(proposalId));
+        log(`Proposal amount: ${ethers.formatEther(proposal.amount || proposal.amountRequested)} ETH`);
+
+        // Check if user is owner
+        const owner = await proposalContract.owner();
+        if (owner.toLowerCase() !== address.toLowerCase()) {
+          log('You are not the owner of the contract', 'error');
+          return;
+        }
+
+        // Try to directly mark the proposal as executed
+        try {
+          log('Attempting to directly mark proposal as executed...');
+          const tx = await proposalContract.markProposalExecuted(BigInt(proposalId), {
+            gasLimit: 500000
+          });
+          log(`Transaction sent: ${tx.hash}`);
+
+          const receipt = await tx.wait();
+          log(`Transaction confirmed: ${receipt.hash}`, 'success');
+
+          // Now try to transfer the funds
+          const recipient = proposal.recipient;
+          const amount = proposal.amount || proposal.amountRequested;
+
+          log(`Attempting to transfer ${ethers.formatEther(amount)} ETH to ${recipient}...`);
+          const transferTx = await signer.sendTransaction({
+            to: recipient,
+            value: amount,
+            gasLimit: 500000
+          });
+          log(`Transfer transaction sent: ${transferTx.hash}`);
+
+          const transferReceipt = await transferTx.wait();
+          log(`Transfer transaction confirmed: ${transferReceipt.hash}`, 'success');
+
+          log('Force execution complete!', 'success');
+        } catch (error) {
+          log(`Error marking proposal as executed: ${error.message}`, 'error');
+
+          // Try alternative approach - use the fund allocation contract directly
+          try {
+            log('Attempting to execute via FundAllocation contract...');
+            const tx = await fundContract.executeProposal(BigInt(proposalId), {
+              gasLimit: 500000
+            });
+            log(`Transaction sent: ${tx.hash}`);
+
+            const receipt = await tx.wait();
+            log(`Transaction confirmed: ${receipt.hash}`, 'success');
+
+            log('Force execution complete!', 'success');
+          } catch (error) {
+            log(`Error executing via FundAllocation: ${error.message}`, 'error');
+
+            // Last resort - try to use low-level call
+            try {
+              log('Attempting low-level call to executeProposal...');
+              const data = fundContract.interface.encodeFunctionData('executeProposal', [BigInt(proposalId)]);
+              const tx = await signer.sendTransaction({
+                to: FUND_ALLOCATION,
+                data,
+                gasLimit: 500000
+              });
+              log(`Transaction sent: ${tx.hash}`);
+
+              const receipt = await tx.wait();
+              log(`Transaction confirmed: ${receipt.hash}`, 'success');
+
+              log('Force execution complete!', 'success');
+            } catch (error) {
+              log(`Error with low-level call: ${error.message}`, 'error');
+              log('All execution attempts failed', 'error');
+            }
+          }
+        }
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        console.error('Error force executing proposal:', error);
+      }
+    }
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load ethers.js v6
+      const script = document.createElement('script');
+      script.src = 'https://cdn.ethers.org/ethers-6.8.1.umd.min.js';
+      document.head.appendChild(script);
+
+      // Add event listeners to the buttons
+      document.getElementById('debugButton').addEventListener('click', debugProposal);
+      document.getElementById('forceExecuteButton').addEventListener('click', forceExecute);
+
+      // Check if there's a proposal ID in the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const proposalId = urlParams.get('id');
+      if (proposalId) {
+        document.getElementById('proposalId').value = proposalId;
+      }
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Direct Proposal Execution</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    button {
+      background-color: #4CAF50;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 10px 2px;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .danger {
+      background-color: #f44336;
+    }
+    #output {
+      background-color: #f5f5f5;
+      border: 1px solid #ddd;
+      padding: 10px;
+      border-radius: 4px;
+      margin-top: 20px;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .info {
+      background-color: #e7f3fe;
+      border-left: 6px solid #2196F3;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .warning {
+      background-color: #ffffd7;
+      border-left: 6px solid #ffeb3b;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .error {
+      background-color: #ffebee;
+      border-left: 6px solid #f44336;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .success {
+      background-color: #e8f5e9;
+      border-left: 6px solid #4caf50;
+      padding: 10px;
+      margin: 10px 0;
+    }
+    .method-container {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 15px;
+    }
+    .method-title {
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>Direct Proposal Execution Tool</h1>
+  <div class="warning">
+    <p><strong>Warning:</strong> This is an advanced tool for directly executing proposals when normal methods fail. Use with caution.</p>
+    <p><a href="README-EXECUTION.md" target="_blank">Read the execution guide</a> for detailed instructions.</p>
+  </div>
+
+  <div>
+    <label for="proposalId">Proposal ID:</label>
+    <input type="number" id="proposalId" value="1" min="1" step="1">
+    <button id="loadButton">Load Proposal</button>
+  </div>
+
+  <div id="proposalDetails"></div>
+
+  <div id="executionMethods" style="display: none;">
+    <h2>Execution Methods</h2>
+
+    <div class="method-container">
+      <div class="method-title">Method 1: Execution via VotingGovernance</div>
+      <p>This is the recommended method that executes the proposal through the VotingGovernance contract.</p>
+      <button id="method1Button">Execute (Method 1)</button>
+    </div>
+
+    <div class="method-container">
+      <div class="method-title">Method 2: Standard Execution via FundAllocation</div>
+      <p>This tries to execute the proposal through the FundAllocation contract (may not work).</p>
+      <button id="method2Button">Execute (Method 2)</button>
+    </div>
+
+    <div class="method-container">
+      <div class="method-title">Method 3: Direct markProposalExecuted + Manual Transfer</div>
+      <p>This method directly marks the proposal as executed in the ProposalManagement contract, then manually transfers the funds.</p>
+      <button id="method3Button" class="danger">Execute (Method 3)</button>
+    </div>
+
+    <div class="method-container">
+      <div class="method-title">Method 4: Low-level Call</div>
+      <p>This method uses a low-level call to the FundAllocation contract with a fixed gas limit.</p>
+      <button id="method4Button" class="danger">Execute (Method 4)</button>
+    </div>
+  </div>
+
+  <div id="output">Logs will appear here...</div>
+
+  <script>
+    // Function to log to the output div
+    function log(message, type = 'info') {
+      const output = document.getElementById('output');
+      const timestamp = new Date().toLocaleTimeString();
+
+      let className = '';
+      if (type === 'error') className = 'error';
+      if (type === 'success') className = 'success';
+      if (type === 'warning') className = 'warning';
+
+      const logEntry = document.createElement('div');
+      logEntry.className = className;
+      logEntry.textContent = `[${timestamp}] ${message}`;
+
+      output.appendChild(logEntry);
+      output.scrollTop = output.scrollHeight;
+    }
+
+    // Function to display proposal details
+    function displayProposalDetails(proposal) {
+      const detailsDiv = document.getElementById('proposalDetails');
+
+      // Create a table for the proposal details
+      let html = '<h2>Proposal Details</h2>';
+
+      html += `
+        <div class="info">
+          <p><strong>ID:</strong> ${proposal.id}</p>
+          <p><strong>Description:</strong> ${proposal.description}</p>
+          <p><strong>Amount:</strong> ${proposal.amount} ETH</p>
+          <p><strong>Recipient:</strong> ${proposal.recipient}</p>
+          <p><strong>Votes For:</strong> ${proposal.votesFor}</p>
+          <p><strong>Votes Against:</strong> ${proposal.votesAgainst}</p>
+          <p><strong>Approved:</strong> ${proposal.approved ? 'Yes' : 'No'}</p>
+          <p><strong>Executed:</strong> ${proposal.executed ? 'Yes' : 'No'}</p>
+          <p><strong>Creation Time:</strong> ${proposal.creationTimeFormatted}</p>
+          <p><strong>Execution Time:</strong> ${proposal.executionTimeFormatted}</p>
+          <p><strong>Can Execute:</strong> ${proposal.canExecute ? 'Yes' : 'No'}</p>
+          <p><strong>Fund Contract Balance:</strong> ${proposal.balance} ETH</p>
+          <p><strong>Is User Owner:</strong> ${proposal.isOwner ? 'Yes' : 'No'}</p>
+        </div>
+      `;
+
+      // Set the HTML
+      detailsDiv.innerHTML = html;
+
+      // Show execution methods
+      document.getElementById('executionMethods').style.display = 'block';
+    }
+
+    // Function to load proposal details
+    async function loadProposal() {
+      try {
+        log('Connecting to MetaMask...');
+
+        // Check if MetaMask is available
+        if (typeof window.ethereum === 'undefined') {
+          log('MetaMask is not installed!', 'error');
+          return;
+        }
+
+        // Request account access
+        await window.ethereum.request({ method: 'eth_requestAccounts' });
+        log('Connected to MetaMask', 'success');
+
+        // Get the proposal ID
+        const proposalId = document.getElementById('proposalId').value;
+        log(`Loading proposal ID: ${proposalId}`);
+
+        // Get the provider and signer
+        const provider = new ethers.BrowserProvider(window.ethereum);
+        const signer = await provider.getSigner();
+        const address = await signer.getAddress();
+        log(`Using account: ${address}`);
+
+        // Get contract addresses
+        const module = await import('../src/config/contracts.js');
+        const PROPOSAL_MANAGEMENT = module.PROPOSAL_MANAGEMENT;
+        const FUND_ALLOCATION = module.FUND_ALLOCATION;
+        const VOTING_GOVERNANCE = module.VOTING_GOVERNANCE;
+
+        log(`Proposal Management contract: ${PROPOSAL_MANAGEMENT}`);
+        log(`Fund Allocation contract: ${FUND_ALLOCATION}`);
+        log(`Voting Governance contract: ${VOTING_GOVERNANCE}`);
+
+        // Get contract ABIs
+        const pmAbi = await import('../src/config/ProposalManagement.json');
+        const faAbi = await import('../src/config/FundAllocation.json');
+        const vgAbi = await import('../src/config/VotingGovernance.json');
+
+        // Create contract instances
+        const proposalContract = new ethers.Contract(
+          PROPOSAL_MANAGEMENT,
+          pmAbi.abi,
+          provider
+        );
+
+        const fundContract = new ethers.Contract(
+          FUND_ALLOCATION,
+          faAbi.abi,
+          provider
+        );
+
+        const votingContract = new ethers.Contract(
+          VOTING_GOVERNANCE,
+          vgAbi.abi,
+          provider
+        );
+
+        // Get current block timestamp
+        const blockNumber = await provider.getBlockNumber();
+        const block = await provider.getBlock(blockNumber);
+        const blockTimestamp = block?.timestamp || Math.floor(Date.now() / 1000);
+        log(`Current block timestamp: ${blockTimestamp} (${new Date(Number(blockTimestamp) * 1000).toLocaleString()})`);
+
+        // Get proposal details
+        log('Getting proposal details...');
+        const proposal = await proposalContract.getProposalById(BigInt(proposalId));
+
+        // Format the proposal details
+        const formattedProposal = {
+          id: proposalId,
+          description: proposal.description,
+          amount: ethers.formatEther(proposal.amount || proposal.amountRequested),
+          recipient: proposal.recipient,
+          votesFor: Number(proposal.votesFor),
+          votesAgainst: Number(proposal.votesAgainst),
+          approved: proposal.approved,
+          executed: proposal.executed,
+          creationTime: Number(proposal.creationTime),
+          executionTime: Number(proposal.executionTime),
+          creationTimeFormatted: new Date(Number(proposal.creationTime) * 1000).toLocaleString(),
+          executionTimeFormatted: proposal.executionTime > 0
+            ? new Date(Number(proposal.executionTime) * 1000).toLocaleString()
+            : 'Not set'
+        };
+
+        // Check if proposal can be executed
+        let canExecute = false;
+        try {
+          canExecute = await votingContract.canExecute(BigInt(proposalId));
+          log(`Can execute according to VotingGovernance: ${canExecute}`, canExecute ? 'success' : 'warning');
+        } catch (error) {
+          log(`Error checking if proposal can be executed: ${error.message}`, 'error');
+          // Continue anyway
+          canExecute = true;
+        }
+
+        // Check fund contract balance
+        const balance = await provider.getBalance(FUND_ALLOCATION);
+        log(`Fund contract balance: ${ethers.formatEther(balance)} ETH`,
+          balance >= (proposal.amount || proposal.amountRequested) ? 'success' : 'error');
+
+        // Check if user is owner
+        const owner = await proposalContract.owner();
+        const isOwner = owner.toLowerCase() === address.toLowerCase();
+        log(`Contract owner: ${owner}`);
+        log(`Is current user the owner: ${isOwner}`, isOwner ? 'success' : 'error');
+
+        // Store the contract instances and proposal data for later use
+        window.contractData = {
+          proposalContract,
+          fundContract,
+          votingContract,
+          proposal,
+          proposalId: BigInt(proposalId),
+          signer,
+          provider,
+          PROPOSAL_MANAGEMENT,
+          FUND_ALLOCATION,
+          VOTING_GOVERNANCE
+        };
+
+        // Display the proposal details
+        displayProposalDetails({
+          ...formattedProposal,
+          canExecute,
+          balance: ethers.formatEther(balance),
+          isOwner
+        });
+
+        log('Proposal loaded successfully!', 'success');
+      } catch (error) {
+        log(`Error: ${error.message}`, 'error');
+        console.error('Error loading proposal:', error);
+      }
+    }
+
+    // Method 1: Execution via VotingGovernance (Recommended)
+    async function executeMethod1() {
+      try {
+        log('Executing proposal using Method 1: Execution via VotingGovernance (Recommended)...', 'info');
+
+        const { votingContract, proposalId, signer } = window.contractData;
+
+        // Connect the contract with the signer
+        const votingContractWithSigner = votingContract.connect(signer);
+
+        // Try with overrides first
+        try {
+          log('Attempting execution with gas limit override...');
+          const tx = await votingContractWithSigner.executeProposal(proposalId, {
+            gasLimit: 500000
+          });
+          log(`Transaction sent: ${tx.hash}`, 'success');
+
+          log('Waiting for confirmation...');
+          const receipt = await tx.wait();
+          log(`Transaction confirmed in block ${receipt.blockNumber}`, 'success');
+
+          // Upload execution metadata to IPFS
+          try {
+            log('Uploading execution metadata to IPFS...');
+
+            // Import the IPFS upload function
+            const { uploadExecutionToIPFS } = await import('../src/utils/ipfs.js');
+
+            // Get executor address
+            const executor = await signer.getAddress();
+
+            // Use current timestamp for IPFS upload to ensure compatibility
+            const timestamp = Date.now().toString();
+            log(`Using current timestamp for IPFS upload: ${new Date(Number(timestamp)).toLocaleString()}`);
+
+            // Note: For UI display purposes, we can still show April 28, 2025 as the execution date
+            // but we use the current timestamp for the actual IPFS upload to ensure compatibility
+
+            // Create metadata
+            const metadata = JSON.stringify({
+              proposalId: proposalId.toString(),
+              executor,
+              recipient: proposal.recipient,
+              amount: (proposal.amount || proposal.amountRequested).toString(),
+              txHash: tx.hash,
+              timestamp,
+              method: 'VotingGovernance (Direct Execute Tool)'
+            });
+
+            // Upload to IPFS
+            await uploadExecutionToIPFS(
+              proposalId.toString(),
+              executor,
+              proposal.recipient,
+              ethers.formatEther(proposal.amount || proposal.amountRequested),
+              timestamp,
+              tx.hash,
+              metadata
+            );
+
+            log('Execution metadata uploaded to IPFS successfully', 'success');
+          } catch (uploadErr) {
+            log(`Warning: Failed to upload execution metadata to IPFS: ${uploadErr.message}`, 'warning');
+            console.warn('Execution IPFS upload failed:', uploadErr);
+          }
+
+          log('Execution successful!', 'success');
+          return true;
+        } catch (overrideError) {
+          log(`Error with overrides: ${overrideError.message}`, 'error');
+
+          // Try with low-level call
+          log('Attempting execution with low-level call...');
+
+          // Get the contract address
+          const contractAddress = (votingContract as any).target || (votingContract as any).address;
+
+          // Encode the function call
+          const data = votingContract.interface.encodeFunctionData('executeProposal', [proposalId]);
+
+          // Send the transaction with explicit gas limit
+          const tx = await signer.sendTransaction({
+            to: contractAddress,
+            data,
+            gasLimit: 500000 // Fixed gas limit
+          });
+
+          log(`Transaction sent: ${tx.hash}`, 'success');
+
+          log('Waiting for confirmation...');
+          const receipt = await tx.wait();
+          log(`Transaction confirmed in block ${receipt.blockNumber}`, 'success');
+
+          log('Execution successful!', 'success');
+          return true;
+        }
+      } catch (error) {
+        log(`Method 1 failed: ${error.message}`, 'error');
+        console.error('Method 1 error:', error);
+        return false;
+      }
+    }
+
+    // Method 2: Standard Execution via FundAllocation (May not work)
+    async function executeMethod2() {
+      try {
+        log('Executing proposal using Method 2: Standard Execution via FundAllocation (May not work)...', 'info');
+
+        const { fundContract, proposalId, signer } = window.contractData;
+
+        // Connect the contract with the signer
+        const fundContractWithSigner = fundContract.connect(signer);
+
+        // Try with overrides first
+        try {
+          log('Attempting execution with gas limit override...');
+          const tx = await fundContractWithSigner.executeProposal(proposalId, {
+            gasLimit: 500000
+          });
+          log(`Transaction sent: ${tx.hash}`, 'success');
+
+          log('Waiting for confirmation...');
+          const receipt = await tx.wait();
+          log(`Transaction confirmed in block ${receipt.blockNumber}`, 'success');
+
+          log('Execution successful!', 'success');
+          return true;
+        } catch (overrideError) {
+          log(`Error with overrides: ${overrideError.message}`, 'error');
+
+          // Try with low-level call
+          log('Attempting execution with low-level call...');
+
+          // Get the contract address
+          const contractAddress = (fundContract as any).target || (fundContract as any).address;
+
+          // Encode the function call
+          const data = fundContract.interface.encodeFunctionData('executeProposal', [proposalId]);
+
+          // Send the transaction with explicit gas limit
+          const tx = await signer.sendTransaction({
+            to: contractAddress,
+            data,
+            gasLimit: 500000 // Fixed gas limit
+          });
+
+          log(`Transaction sent: ${tx.hash}`, 'success');
+
+          log('Waiting for confirmation...');
+          const receipt = await tx.wait();
+          log(`Transaction confirmed in block ${receipt.blockNumber}`, 'success');
+
+          log('Execution successful!', 'success');
+          return true;
+        }
+      } catch (error) {
+        log(`Method 2 failed: ${error.message}`, 'error');
+        console.error('Method 2 error:', error);
+        return false;
+      }
+    }
+
+    // Method 3: Direct markProposalExecuted + Manual Transfer
+    async function executeMethod3() {
+      try {
+        log('Executing proposal using Method 3: Direct markProposalExecuted + Manual Transfer...', 'warning');
+
+        if (!confirm('WARNING: This method bypasses normal checks and directly marks the proposal as executed. Are you sure you want to continue?')) {
+          log('Operation cancelled by user.', 'info');
+          return false;
+        }
+
+        const { proposalContract, proposalId, signer, proposal } = window.contractData;
+
+        // Connect the contract with the signer
+        const proposalContractWithSigner = proposalContract.connect(signer);
+
+        // Try to directly mark the proposal as executed
+        log('Attempting to directly mark proposal as executed...');
+        const tx = await proposalContractWithSigner.markProposalExecuted(proposalId, {
+          gasLimit: 500000
+        });
+        log(`Transaction sent: ${tx.hash}`, 'success');
+
+        log('Waiting for confirmation...');
+        const receipt = await tx.wait();
+        log(`Transaction confirmed in block ${receipt.blockNumber}`, 'success');
+
+        // Now manually transfer the funds
+        const recipient = proposal.recipient;
+        const amount = proposal.amount || proposal.amountRequested;
+
+        log(`Attempting to manually transfer ${ethers.formatEther(amount)} ETH to ${recipient}...`);
+        const transferTx = await signer.sendTransaction({
+          to: recipient,
+          value: amount,
+          gasLimit: 500000
+        });
+        log(`Transfer transaction sent: ${transferTx.hash}`, 'success');
+
+        log('Waiting for confirmation...');
+        const transferReceipt = await transferTx.wait();
+        log(`Transfer transaction confirmed in block ${transferReceipt.blockNumber}`, 'success');
+
+        log('Execution successful!', 'success');
+        return true;
+      } catch (error) {
+        log(`Method 3 failed: ${error.message}`, 'error');
+        console.error('Method 3 error:', error);
+        return false;
+      }
+    }
+
+    // Method 4: Low-level Call
+    async function executeMethod4() {
+      try {
+        log('Executing proposal using Method 4: Low-level Call...', 'warning');
+
+        if (!confirm('WARNING: This method uses a low-level call to the contract. Are you sure you want to continue?')) {
+          log('Operation cancelled by user.', 'info');
+          return false;
+        }
+
+        const { fundContract, proposalId, signer, FUND_ALLOCATION } = window.contractData;
+
+        // Encode the function call
+        const data = fundContract.interface.encodeFunctionData('executeProposal', [proposalId]);
+
+        // Send the transaction
+        log('Sending low-level transaction...');
+        const tx = await signer.sendTransaction({
+          to: FUND_ALLOCATION,
+          data,
+          gasLimit: 500000
+        });
+        log(`Transaction sent: ${tx.hash}`, 'success');
+
+        log('Waiting for confirmation...');
+        const receipt = await tx.wait();
+        log(`Transaction confirmed in block ${receipt.blockNumber}`, 'success');
+
+        log('Execution successful!', 'success');
+        return true;
+      } catch (error) {
+        log(`Method 4 failed: ${error.message}`, 'error');
+        console.error('Method 4 error:', error);
+        return false;
+      }
+    }
+
+    // Initialize the page
+    document.addEventListener('DOMContentLoaded', async () => {
+      // Load ethers.js v6
+      const script = document.createElement('script');
+      script.src = 'https://cdn.ethers.org/ethers-6.8.1.umd.min.js';
+      document.head.appendChild(script);
+
+      // Add event listeners to the buttons
+      document.getElementById('loadButton').addEventListener('click', loadProposal);
+      document.getElementById('method1Button').addEventListener('click', executeMethod1);
+      document.getElementById('method2Button').addEventListener('click', executeMethod2);
+      document.getElementById('method3Button').addEventListener('click', executeMethod3);
+      document.getElementById('method4Button').addEventListener('click', executeMethod4);
+
+      // Check if there's a proposal ID in the URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const proposalId = urlParams.get('id');
+      if (proposalId) {
+        document.getElementById('proposalId').value = proposalId;
+        // Auto-load the proposal after a short delay to ensure ethers.js is loaded
+        setTimeout(() => {
+          document.getElementById('loadButton').click();
+        }, 1000);
+      }
+    });
+  </script>
+</body>
+</html>

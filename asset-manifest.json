@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Mwanachi-Charity-DAO/static/css/main.b66a8671.css",
+    "main.js": "/Mwanachi-Charity-DAO/static/js/main.ec155428.js",
+    "static/js/453.b32258ba.chunk.js": "/Mwanachi-Charity-DAO/static/js/453.b32258ba.chunk.js",
+    "index.html": "/Mwanachi-Charity-DAO/index.html",
+    "main.b66a8671.css.map": "/Mwanachi-Charity-DAO/static/css/main.b66a8671.css.map",
+    "main.ec155428.js.map": "/Mwanachi-Charity-DAO/static/js/main.ec155428.js.map",
+    "453.b32258ba.chunk.js.map": "/Mwanachi-Charity-DAO/static/js/453.b32258ba.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.b66a8671.css",
+    "static/js/main.ec155428.js"
+  ]
+}

@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IPFS Upload Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        button {
+            padding: 10px 15px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 0;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+        .log {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 400px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>IPFS Upload Test</h1>
+    <p>This page tests the IPFS upload functionality for execution data.</p>
+    
+    <button id="testConnection">Test IPFS Connection</button>
+    <button id="testUpload">Test Execution Upload</button>
+    
+    <h2>Console Output:</h2>
+    <div class="log" id="log"></div>
+    
+    <script>
+        // Redirect console output to the log div
+        const logDiv = document.getElementById('log');
+        const originalConsoleLog = console.log;
+        const originalConsoleError = console.error;
+        const originalConsoleWarn = console.warn;
+        
+        console.log = function() {
+            const args = Array.from(arguments);
+            originalConsoleLog.apply(console, args);
+            logDiv.innerHTML += `<div style="color: black;">[LOG] ${args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ')}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        console.error = function() {
+            const args = Array.from(arguments);
+            originalConsoleError.apply(console, args);
+            logDiv.innerHTML += `<div style="color: red;">[ERROR] ${args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ')}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        console.warn = function() {
+            const args = Array.from(arguments);
+            originalConsoleWarn.apply(console, args);
+            logDiv.innerHTML += `<div style="color: orange;">[WARN] ${args.map(arg => typeof arg === 'object' ? JSON.stringify(arg) : arg).join(' ')}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        };
+        
+        // Function to load the IPFS module from the main app
+        async function loadIPFSModule() {
+            try {
+                // This assumes your app is running on the same origin
+                const response = await fetch('/static/js/main.chunk.js');
+                const text = await response.text();
+                
+                // Extract the PINATA_JWT from the main chunk
+                const jwtMatch = text.match(/PINATA_JWT\s*=\s*["']([^"']+)["']/);
+                if (jwtMatch && jwtMatch[1]) {
+                    console.log('Found PINATA_JWT in main chunk');
+                    window.PINATA_JWT = jwtMatch[1];
+                } else {
+                    console.error('Could not find PINATA_JWT in main chunk');
+                }
+                
+                // Create a script element to load the IPFS module
+                const script = document.createElement('script');
+                script.src = '/static/js/main.chunk.js';
+                script.onload = () => {
+                    console.log('Main chunk loaded');
+                    
+                    // Check if the IPFS module is available
+                    if (window.ipfsModule) {
+                        console.log('IPFS module loaded successfully');
+                    } else {
+                        console.error('IPFS module not found in main chunk');
+                    }
+                };
+                document.head.appendChild(script);
+            } catch (error) {
+                console.error('Error loading IPFS module:', error);
+            }
+        }
+        
+        // Test IPFS connection
+        document.getElementById('testConnection').addEventListener('click', async () => {
+            try {
+                console.log('Testing IPFS connection...');
+                
+                // Check if we have the IPFS module
+                if (!window.ipfsModule) {
+                    console.error('IPFS module not loaded. Please wait for the page to fully load.');
+                    return;
+                }
+                
+                const result = await window.ipfsModule.testIPFSConnection();
+                console.log('IPFS connection test result:', result);
+            } catch (error) {
+                console.error('Error testing IPFS connection:', error);
+            }
+        });
+        
+        // Test execution upload
+        document.getElementById('testUpload').addEventListener('click', async () => {
+            try {
+                console.log('Testing execution upload...');
+                
+                // Check if we have the IPFS module
+                if (!window.ipfsModule) {
+                    console.error('IPFS module not loaded. Please wait for the page to fully load.');
+                    return;
+                }
+                
+                const result = await window.ipfsModule.testExecutionUpload();
+                console.log('Test upload result:', result);
+            } catch (error) {
+                console.error('Error testing execution upload:', error);
+            }
+        });
+        
+        // Load the IPFS module when the page loads
+        window.addEventListener('load', loadIPFSModule);
+    </script>
+</body>
+</html>
