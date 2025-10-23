@@ -20,22 +20,32 @@ async function getMpesaAccessToken() {
       environment: MPESA_CONFIG.environment,
       hasConsumerKey: !!MPESA_CONFIG.consumerKey,
       hasConsumerSecret: !!MPESA_CONFIG.consumerSecret,
-      businessShortcode: MPESA_CONFIG.businessShortcode
+      businessShortcode: MPESA_CONFIG.businessShortcode,
+      consumerKeyLength: MPESA_CONFIG.consumerKey?.length || 0,
+      consumerSecretLength: MPESA_CONFIG.consumerSecret?.length || 0
     });
 
     if (!MPESA_CONFIG.consumerKey || !MPESA_CONFIG.consumerSecret) {
+      console.error('❌ Missing credentials:');
+      console.error('   MPESA_CONSUMER_KEY:', process.env.MPESA_CONSUMER_KEY ? 'SET' : 'NOT SET');
+      console.error('   MPESA_CONSUMER_SECRET:', process.env.MPESA_CONSUMER_SECRET ? 'SET' : 'NOT SET');
       throw new Error('M-Pesa credentials not configured');
     }
 
-    const auth = Buffer.from(
-      `${MPESA_CONFIG.consumerKey}:${MPESA_CONFIG.consumerSecret}`
-    ).toString('base64');
+    const credString = `${MPESA_CONFIG.consumerKey}:${MPESA_CONFIG.consumerSecret}`;
+    console.log('🔑 Credential string length:', credString.length);
+    console.log('🔑 First 20 chars of key:', MPESA_CONFIG.consumerKey.substring(0, 20));
+
+    const auth = Buffer.from(credString).toString('base64');
+    console.log('🔐 Base64 auth header length:', auth.length);
+    console.log('🔐 First 20 chars of auth:', auth.substring(0, 20));
 
     const url = MPESA_CONFIG.environment === 'sandbox'
       ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
       : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
 
     console.log('🔗 OAuth URL:', url);
+    console.log('📤 Sending OAuth request...');
 
     const response = await axios.get(url, {
       headers: {
@@ -44,10 +54,16 @@ async function getMpesaAccessToken() {
     });
 
     console.log('✅ Access token obtained successfully');
+    console.log('📊 Token response:', {
+      hasAccessToken: !!response.data.access_token,
+      expiresIn: response.data.expires_in
+    });
     return response.data.access_token;
   } catch (error) {
     console.error('❌ Error getting M-Pesa access token:', error.message);
-    console.error('❌ Full error:', error.response?.data || error);
+    console.error('❌ Status code:', error.response?.status);
+    console.error('❌ Response data:', error.response?.data);
+    console.error('❌ Full error:', error.response?.data || error.message);
     throw error;
   }
 }
