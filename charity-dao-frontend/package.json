@@ -2,7 +2,7 @@
   "name": "charity-dao-frontend",
   "version": "0.1.0",
   "private": true,
-  "homepage": "https://chaseway132.github.io/Mwanachi-Charity-DAO",
+  "homepage": "https://chaseway132.github.io/mwanachi-charity-dao/",
   "dependencies": {
     "@types/node": "^16.18.0",
     "@types/react": "^18.2.0",
