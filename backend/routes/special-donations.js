@@ -85,16 +85,21 @@ async function getCampaignById(id) {
 
 // Helper function to save campaign
 async function saveCampaign(campaignData) {
+  const connected = isConnected();
+  console.log('💾 saveCampaign() called - MongoDB connected:', connected);
+
   try {
-    if (isConnected()) {
+    if (connected) {
       console.log('💾 Saving campaign to MongoDB:', campaignData.title);
       const campaign = new Campaign(campaignData);
+      console.log('📝 Campaign object created, calling save()...');
       const saved = await campaign.save();
       console.log('✅ Campaign saved to MongoDB:', saved.id);
       return saved;
     }
   } catch (error) {
-    console.error('❌ Error saving to MongoDB:', error);
+    console.error('❌ Error saving to MongoDB:', error.message);
+    console.error('❌ Full error:', error);
   }
   // Fallback to memory
   console.log('📦 Saving campaign to memory:', campaignData.title);
