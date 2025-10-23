@@ -31,8 +31,8 @@ const DonationFeed: React.FC<DonationFeedProps> = ({ campaignId, limit = 10 }) =
   const fetchDonations = async () => {
     try {
       const url = campaignId
-        ? `http://localhost:5000/api/special-donations/${campaignId}/donations`
-        : 'http://localhost:5000/api/donations';
+        ? `https://mwanachi-charity-dao-backend.onrender.com/api/special-donations/${campaignId}/donations`
+        : 'https://mwanachi-charity-dao-backend.onrender.com/api/donations';
 
       const response = await fetch(url);
       const data = await response.json();

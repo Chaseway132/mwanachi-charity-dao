@@ -33,7 +33,7 @@ const SpecialDonationsList: React.FC<SpecialDonationsListProps> = ({ onSelectCam
 
   const fetchCampaigns = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/special-donations');
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/special-donations');
       const data = await response.json();
       setCampaigns(data.campaigns || []);
       setLoading(false);

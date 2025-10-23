@@ -4,6 +4,7 @@ import { Lock, Plus, LogOut, CheckCircle, AlertCircle, Eye, EyeOff, BarChart3, U
 
 interface AdminDashboardProps {
   onLogout?: () => void;
+  onCampaignCreated?: () => void;
 }
 
 interface Analytics {
@@ -14,7 +15,7 @@ interface Analytics {
   lastVisit: string;
 }
 
-const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
+const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onCampaignCreated }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [adminUsername, setAdminUsername] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -56,7 +57,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   // Load analytics data
   const loadAnalytics = async () => {
     try {
-      const response = await fetch('http://localhost:5000/api/analytics', {
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/analytics', {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
         }
@@ -129,7 +130,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     try {
       setIsLoading(true);
 
-      const response = await fetch('http://localhost:5000/api/special-donations', {
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/special-donations', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -163,6 +164,11 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
 
       // Reload analytics
       loadAnalytics();
+
+      // Notify parent component to refresh campaigns list
+      if (onCampaignCreated) {
+        onCampaignCreated();
+      }
     } catch (error) {
       console.error('Campaign creation error:', error);
       toast.error(error instanceof Error ? error.message : 'Failed to create campaign');

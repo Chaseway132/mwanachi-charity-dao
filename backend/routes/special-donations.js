@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
 const { checkAdminToken } = require('../middleware/adminAuth');
+const Campaign = require('../models/Campaign');
+const { isConnected } = require('../utils/database');
 
-// In-memory storage for special donations campaigns
-// TODO: Replace with database (MongoDB/PostgreSQL)
-let campaigns = [
+// In-memory fallback storage (used if MongoDB is not connected)
+let campaignsMemory = [
   {
     id: 1,
     title: 'Emergency Medical Fund - Ojwang\' Memorial',
@@ -44,9 +45,84 @@ let campaigns = [
 
 let donationIdCounter = 1;
 
-// GET /api/special-donations - List all campaigns
-router.get('/', (req, res) => {
+// Helper function to get campaigns from DB or memory
+async function getCampaigns() {
   try {
+    if (isConnected()) {
+      console.log('🔍 Fetching from MongoDB...');
+      const campaigns = await Campaign.find().sort({ createdAt: -1 });
+      console.log('✅ MongoDB campaigns found:', campaigns.length);
+      return campaigns;
+    }
+  } catch (error) {
+    console.error('❌ Error fetching from MongoDB:', error);
+  }
+  console.log('📦 Using in-memory campaigns:', campaignsMemory.length);
+  return campaignsMemory;
+}
+
+// Helper function to get campaign by ID
+async function getCampaignById(id) {
+  try {
+    if (isConnected()) {
+      return await Campaign.findOne({ id: parseInt(id) });
+    }
+  } catch (error) {
+    console.error('Error fetching from MongoDB:', error);
+  }
+  return campaignsMemory.find(c => c.id === parseInt(id));
+}
+
+// Helper function to save campaign
+async function saveCampaign(campaignData) {
+  try {
+    if (isConnected()) {
+      console.log('💾 Saving campaign to MongoDB:', campaignData.title);
+      const campaign = new Campaign(campaignData);
+      const saved = await campaign.save();
+      console.log('✅ Campaign saved to MongoDB:', saved.id);
+      return saved;
+    }
+  } catch (error) {
+    console.error('❌ Error saving to MongoDB:', error);
+  }
+  // Fallback to memory
+  console.log('📦 Saving campaign to memory:', campaignData.title);
+  campaignsMemory.push(campaignData);
+  return campaignData;
+}
+
+// Helper function to update campaign
+async function updateCampaign(id, updateData) {
+  try {
+    if (isConnected()) {
+      return await Campaign.findOneAndUpdate(
+        { id: parseInt(id) },
+        updateData,
+        { new: true }
+      );
+    }
+  } catch (error) {
+    console.error('Error updating in MongoDB:', error);
+  }
+  // Fallback to memory
+  const campaign = campaignsMemory.find(c => c.id === parseInt(id));
+  if (campaign) {
+    Object.assign(campaign, updateData);
+    return campaign;
+  }
+  return null;
+}
+
+// GET /api/special-donations - List all campaigns
+router.get('/', async (req, res) => {
+  try {
+    const connected = isConnected();
+    console.log('📊 GET /api/special-donations - MongoDB connected:', connected);
+
+    const campaigns = await getCampaigns();
+    console.log('📊 Fetched campaigns count:', campaigns.length);
+
     const campaignsList = campaigns.map(campaign => ({
       id: campaign.id,
       title: campaign.title,
@@ -62,17 +138,18 @@ router.get('/', (req, res) => {
       category: campaign.category,
       createdAt: campaign.createdAt
     }));
-    
-    res.json({ 
+
+    res.json({
       success: true,
       campaigns: campaignsList,
-      total: campaignsList.length
+      total: campaignsList.length,
+      storage: connected ? 'MongoDB' : 'Memory'
     });
   } catch (error) {
     console.error('Error fetching campaigns:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       success: false,
-      error: error.message 
+      error: error.message
     });
   }
 });
@@ -278,7 +355,7 @@ router.post('/:id/update', (req, res) => {
 });
 
 // POST /api/special-donations - Create new campaign (ADMIN ONLY)
-router.post('/', checkAdminToken, (req, res) => {
+router.post('/', checkAdminToken, async (req, res) => {
   try {
     const {
       title,
@@ -300,8 +377,9 @@ router.post('/', checkAdminToken, (req, res) => {
       });
     }
 
-    // Generate new campaign ID
-    const newId = Math.max(...campaigns.map(c => c.id), 0) + 1;
+    // Get all campaigns to find max ID
+    const allCampaigns = await getCampaigns();
+    const newId = Math.max(...allCampaigns.map(c => c.id || 0), 0) + 1;
 
     // Create new campaign
     const newCampaign = {
@@ -336,7 +414,8 @@ router.post('/', checkAdminToken, (req, res) => {
       documents: documents || []
     };
 
-    campaigns.push(newCampaign);
+    // Save to database or memory
+    const savedCampaign = await saveCampaign(newCampaign);
 
     // Track in analytics
     if (global.analyticsData) {
@@ -346,7 +425,8 @@ router.post('/', checkAdminToken, (req, res) => {
     res.status(201).json({
       success: true,
       message: 'Campaign created successfully',
-      campaign: newCampaign
+      campaign: savedCampaign,
+      storage: isConnected() ? 'MongoDB' : 'Memory'
     });
   } catch (error) {
     console.error('Error creating campaign:', error);

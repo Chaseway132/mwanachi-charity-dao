@@ -273,18 +273,18 @@ const AppContent: React.FC = () => {
   return (
           <>
             <TreasuryStatus />
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-6">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8 mt-4 md:mt-6">
               <div>
-                <h2 className="text-xl font-semibold mb-4">Quick Actions</h2>
-                <div className="bg-white rounded-lg shadow p-4 mb-6">
-                  <h3 className="text-lg font-medium mb-3">Make a Donation</h3>
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Quick Actions</h2>
+                <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4 md:mb-6">
+                  <h3 className="text-base md:text-lg font-medium mb-3">Make a Donation</h3>
                   <DonationForm />
                 </div>
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-4">Recent Activity</h2>
-                <div className="bg-white rounded-lg shadow p-4">
-                  <h3 className="text-lg font-medium mb-3">Recent Donations</h3>
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Recent Activity</h2>
+                <div className="bg-white rounded-lg shadow p-3 md:p-4">
+                  <h3 className="text-base md:text-lg font-medium mb-3">Recent Donations</h3>
                   <DonationList
                     donations={filteredDonations}
                     searchAddress=""
@@ -294,7 +294,7 @@ const AppContent: React.FC = () => {
                   <div className="mt-4 text-center">
                     <button
                       onClick={() => setActiveTab('donations')}
-                      className="text-indigo-600 hover:text-indigo-800 font-medium"
+                      className="text-indigo-600 hover:text-indigo-800 font-medium text-sm md:text-base"
                     >
                       View All Donations →
                     </button>
@@ -302,13 +302,13 @@ const AppContent: React.FC = () => {
                 </div>
               </div>
             </div>
-            <div className="mt-6">
-              <h2 className="text-xl font-semibold mb-4">Active Proposals</h2>
+            <div className="mt-4 md:mt-6">
+              <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Active Proposals</h2>
               <ProposalList compact={true} />
               <div className="mt-4 text-center">
                 <button
                   onClick={() => setActiveTab('proposals')}
-                  className="text-indigo-600 hover:text-indigo-800 font-medium"
+                  className="text-indigo-600 hover:text-indigo-800 font-medium text-sm md:text-base"
                 >
                   View All Proposals →
                 </button>
@@ -320,16 +320,16 @@ const AppContent: React.FC = () => {
       case 'proposals':
         return (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
               <div>
-                <h2 className="text-xl font-semibold mb-4">Create Proposal</h2>
-                <div className="bg-white rounded-lg shadow p-4">
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Create Proposal</h2>
+                <div className="bg-white rounded-lg shadow p-3 md:p-4">
                   <CreateProposalForm />
                 </div>
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-4">All Proposals</h2>
-                <div className="bg-white rounded-lg shadow p-4">
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">All Proposals</h2>
+                <div className="bg-white rounded-lg shadow p-3 md:p-4">
           <ProposalList />
         </div>
               </div>
@@ -337,7 +337,7 @@ const AppContent: React.FC = () => {
 
             {/* Only show admin functionality to owners */}
             {isOwner && (
-              <div className="mt-6">
+              <div className="mt-4 md:mt-6">
                 <ProposalApproval />
               </div>
             )}
@@ -347,16 +347,16 @@ const AppContent: React.FC = () => {
       case 'donations':
         return (
           <>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-8">
               <div>
-                <h2 className="text-xl font-semibold mb-4">Make a Donation</h2>
-                <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Make a Donation</h2>
+                <div className="bg-white rounded-lg shadow p-3 md:p-6">
                   <DonationForm />
                 </div>
               </div>
               <div>
-                <h2 className="text-xl font-semibold mb-4">Recent Donations</h2>
-                <div className="bg-white rounded-lg shadow p-6">
+                <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">Recent Donations</h2>
+                <div className="bg-white rounded-lg shadow p-3 md:p-6">
                   <DonationList
                     donations={filteredDonations}
                     searchAddress={searchAddress}
@@ -441,71 +441,109 @@ const AppContent: React.FC = () => {
   return (
     <div className="flex flex-col min-h-screen bg-gray-100">
       {/* Navigation Header */}
-      <header className="bg-white shadow-sm">
+      <header className="bg-white shadow-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <h1 className="text-xl font-bold text-gray-900">Charity DAO Platform</h1>
+          {/* Top row: Logo and Wallet */}
+          <div className="flex items-center justify-between mb-3 md:mb-0">
+            <h1 className="text-lg md:text-xl font-bold text-gray-900">Charity DAO Platform</h1>
 
-            <nav className="flex flex-wrap space-x-1">
+            {/* Mobile wallet button */}
+            <div className="md:hidden">
+              {walletAddress ? (
+                <div className="relative group">
+                  <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-2 py-1 rounded-md text-xs font-medium cursor-pointer">
+                    <span className="h-2 w-2 bg-green-500 rounded-full"></span>
+                    <span>{formatAddress(walletAddress)}</span>
+                  </div>
+                  <div className="absolute right-0 mt-2 w-40 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
+                    <div
+                      onClick={disconnectWallet}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    >
+                      Disconnect
+                    </div>
+                    <div
+                      onClick={() => navigator.clipboard.writeText(walletAddress)}
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
+                    >
+                      Copy Address
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={connectWallet}
+                  disabled={connectionLoading}
+                  className="bg-indigo-600 hover:bg-indigo-700 text-white px-2 py-1 rounded-md text-xs font-medium"
+                >
+                  {connectionLoading ? 'Connecting...' : 'Connect'}
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Navigation - Horizontal scroll on mobile, centered on desktop */}
+          <div className="flex items-center justify-between md:justify-center relative">
+            <nav className="flex overflow-x-auto md:overflow-visible space-x-1 md:space-x-2 pb-2 md:pb-0 -mx-4 px-4 md:mx-0 md:px-0">
               <button
                 onClick={() => setActiveTab('dashboard')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'dashboard' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'dashboard' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Dashboard
               </button>
               <button
                 onClick={() => setActiveTab('proposals')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'proposals' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'proposals' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Proposals
               </button>
               <button
                 onClick={() => setActiveTab('donations')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'donations' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'donations' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Donations
               </button>
               <button
                 onClick={() => setActiveTab('special-donations')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'special-donations' ? 'bg-orange-100 text-orange-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'special-donations' ? 'bg-orange-100 text-orange-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
-                🆘 Special Causes
+                🆘 Causes
               </button>
               <button
                 onClick={() => setActiveTab('beneficiaries')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'beneficiaries' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'beneficiaries' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Beneficiaries
               </button>
               <button
                 onClick={() => setActiveTab('signers')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'signers' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'signers' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Signers
               </button>
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`px-3 py-2 rounded-md ${activeTab === 'admin' ? 'bg-red-100 text-red-900' : 'text-gray-600 hover:bg-gray-50'}`}
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'admin' ? 'bg-red-100 text-red-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 🔐 Admin
               </button>
-            </nav>
-
-            <div className="flex items-center space-x-4">
-              <span
+              <button
                 onClick={() => setActiveTab('help')}
-                className="text-gray-600 hover:text-gray-900 cursor-pointer"
+                className={`px-2 md:px-3 py-2 rounded-md text-sm md:text-base whitespace-nowrap ${activeTab === 'help' ? 'bg-gray-100 text-gray-900' : 'text-gray-600 hover:bg-gray-50'}`}
               >
                 Help
-              </span>
+              </button>
+            </nav>
 
+            {/* Desktop wallet button - positioned absolutely on the right */}
+            <div className="hidden md:flex items-center space-x-4 absolute right-0">
               {walletAddress ? (
                 <div className="relative group">
                   <div className="flex items-center space-x-2 bg-green-100 text-green-800 px-4 py-2 rounded-md text-sm font-medium cursor-pointer">
                     <span className="h-2 w-2 bg-green-500 rounded-full"></span>
                     <span>{formatAddress(walletAddress)}</span>
                   </div>
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all">
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                     <div
                       onClick={disconnectWallet}
                       className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer"
@@ -545,8 +583,8 @@ const AppContent: React.FC = () => {
       </header>
 
       {/* Main Content */}
-      <div className="container mx-auto px-4 py-8 flex-grow">
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">
+      <div className="container mx-auto px-4 py-4 md:py-8 flex-grow w-full">
+        <h2 className="text-xl md:text-2xl font-bold text-gray-800 mb-4 md:mb-6">
           {activeTab === 'dashboard' && 'Dashboard'}
           {activeTab === 'proposals' && 'Proposals'}
           {activeTab === 'donations' && 'Donations'}

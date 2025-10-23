@@ -1,8 +1,15 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
+const { connectDB } = require('./utils/database');
 
 const app = express();
+
+// Connect to MongoDB on startup
+connectDB().catch(err => {
+  console.error('Failed to connect to MongoDB:', err);
+  console.warn('Continuing with in-memory storage...');
+});
 
 // Middleware
 app.use(cors());

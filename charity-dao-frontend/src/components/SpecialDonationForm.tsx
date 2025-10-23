@@ -46,7 +46,7 @@ const SpecialDonationForm: React.FC<SpecialDonationFormProps> = ({ campaignId, o
       const formattedPhone = formatPhoneNumber(phoneNumber);
 
       // Initiate STK Push
-      const response = await fetch('http://localhost:5000/api/mpesa/stk-push', {
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/stk-push', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +71,7 @@ const SpecialDonationForm: React.FC<SpecialDonationFormProps> = ({ campaignId, o
           attempts++;
 
           try {
-            const statusResponse = await fetch('http://localhost:5000/api/mpesa/query-status', {
+            const statusResponse = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/query-status', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -141,7 +141,7 @@ const SpecialDonationForm: React.FC<SpecialDonationFormProps> = ({ campaignId, o
 
   const recordDonation = async (phone: string, amount: number, mpesaReceipt: string) => {
     try {
-      await fetch('http://localhost:5000/api/donations', {
+      await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/donations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -54,7 +54,7 @@ const MPesaPaymentForm: React.FC<MPesaPaymentFormProps> = ({
   // Query payment status
   const queryPaymentStatus = async (requestId: string) => {
     try {
-      const response = await fetch('http://localhost:5000/api/mpesa/query-status', {
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/query-status', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -119,7 +119,7 @@ const MPesaPaymentForm: React.FC<MPesaPaymentFormProps> = ({
     try {
       const formattedPhone = formatPhoneNumber(phoneNumber);
 
-      const response = await fetch('http://localhost:5000/api/mpesa/stk-push', {
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/stk-push', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
