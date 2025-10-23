@@ -23,11 +23,13 @@ async function connectDB() {
     }
 
     console.log('🔄 Connecting to MongoDB...');
+    console.log('📍 MONGODB_URI env var:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
     console.log('📍 URI:', MONGODB_URI.replace(/:[^:]*@/, ':****@')); // Hide password
 
     await mongoose.connect(MONGODB_URI, connectionOptions);
 
     console.log('✅ MongoDB connected successfully');
+    console.log('📊 Connection readyState:', mongoose.connection.readyState);
 
     // Handle connection events
     mongoose.connection.on('connected', () => {
@@ -46,7 +48,7 @@ async function connectDB() {
   } catch (error) {
     console.error('❌ MongoDB connection failed:', error.message);
     console.error('💡 Make sure MongoDB is running or provide MONGODB_URI environment variable');
-    
+
     // Don't exit, allow app to run with in-memory storage as fallback
     console.warn('⚠️ Falling back to in-memory storage');
     return null;
@@ -67,7 +69,9 @@ async function disconnectDB() {
 
 // Check if MongoDB is connected
 function isConnected() {
-  return mongoose.connection.readyState === 1;
+  const connected = mongoose.connection.readyState === 1;
+  console.log('🔍 isConnected() check - readyState:', mongoose.connection.readyState, '- connected:', connected);
+  return connected;
 }
 
 module.exports = {
