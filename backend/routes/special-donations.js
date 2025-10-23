@@ -396,7 +396,10 @@ router.post('/', checkAdminToken, async (req, res) => {
     const allCampaigns = await getCampaigns();
     const newId = Math.max(...allCampaigns.map(c => c.id || 0), 0) + 1;
 
-    // Create new campaign
+    // Create new campaign with proper data types for MongoDB
+    const now = new Date();
+    const deadlineDate = deadline ? new Date(deadline) : new Date(Date.now() + (30 * 24 * 60 * 60 * 1000));
+
     const newCampaign = {
       id: newId,
       title,
@@ -406,22 +409,19 @@ router.post('/', checkAdminToken, async (req, res) => {
       targetAmount: parseFloat(targetAmount),
       currentAmount: 0,
       totalDonors: 0,
-      deadline: deadline || Date.now() + (30 * 24 * 60 * 60 * 1000), // 30 days default
+      deadline: deadlineDate, // Ensure it's a Date object
       verified: true, // Admin-created campaigns are auto-verified
       closed: false,
       location: location || '',
-      category: category || 'general',
-      createdAt: Date.now(),
-      createdBy: req.admin.walletAddress,
-      createdByType: 'admin',
-      authorityTier: 'admin',
-      status: 'active',
+      category: category || 'other', // Match schema enum
+      createdAt: now, // Ensure it's a Date object
+      updatedAt: now,
       updates: [
         {
           id: 1,
           title: 'Campaign Created',
           content: `Campaign created by admin: ${req.admin.walletAddress}`,
-          timestamp: Date.now(),
+          timestamp: now,
           ipfsHash: null
         }
       ],
