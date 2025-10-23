@@ -48,10 +48,20 @@ let donationIdCounter = 1;
 // Helper function to get campaigns from DB or memory
 async function getCampaigns() {
   try {
-    if (isConnected()) {
+    const connected = isConnected();
+    console.log('🔍 getCampaigns() - MongoDB connected:', connected);
+
+    if (connected) {
       console.log('🔍 Fetching from MongoDB...');
       const campaigns = await Campaign.find().sort({ createdAt: -1 });
       console.log('✅ MongoDB campaigns found:', campaigns.length);
+
+      // If no campaigns in DB, return memory campaigns as fallback
+      if (campaigns.length === 0) {
+        console.log('⚠️ No campaigns in MongoDB, using memory fallback');
+        return campaignsMemory;
+      }
+
       return campaigns;
     }
   } catch (error) {
