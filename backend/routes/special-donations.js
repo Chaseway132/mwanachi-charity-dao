@@ -430,18 +430,23 @@ router.post('/', checkAdminToken, async (req, res) => {
     };
 
     // Save to database or memory
+    console.log('📝 About to save campaign:', newCampaign.title);
     const savedCampaign = await saveCampaign(newCampaign);
+    console.log('✅ Campaign saved, returned:', savedCampaign.id || savedCampaign._id);
 
     // Track in analytics
     if (global.analyticsData) {
       global.analyticsData.campaignsCreated++;
     }
 
+    const storage = isConnected() ? 'MongoDB' : 'Memory';
+    console.log('📊 Response - Storage:', storage, 'Campaign ID:', savedCampaign.id || savedCampaign._id);
+
     res.status(201).json({
       success: true,
       message: 'Campaign created successfully',
       campaign: savedCampaign,
-      storage: isConnected() ? 'MongoDB' : 'Memory'
+      storage: storage
     });
   } catch (error) {
     console.error('Error creating campaign:', error);
