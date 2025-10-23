@@ -47,23 +47,45 @@ async function getMpesaAccessToken() {
     console.log('🔗 OAuth URL:', url);
     console.log('📤 Sending OAuth request...');
 
+    console.log('📡 Making axios request to:', url);
+    console.log('📡 Request headers:', {
+      Authorization: `Basic ${auth.substring(0, 20)}...`,
+      'Content-Type': 'application/json'
+    });
+
     const response = await axios.get(url, {
       headers: {
-        Authorization: `Basic ${auth}`
-      }
+        Authorization: `Basic ${auth}`,
+        'Content-Type': 'application/json'
+      },
+      timeout: 10000
     });
 
     console.log('✅ Access token obtained successfully');
     console.log('📊 Token response:', {
       hasAccessToken: !!response.data.access_token,
-      expiresIn: response.data.expires_in
+      expiresIn: response.data.expires_in,
+      tokenType: response.data.token_type
     });
     return response.data.access_token;
   } catch (error) {
     console.error('❌ Error getting M-Pesa access token:', error.message);
     console.error('❌ Status code:', error.response?.status);
+    console.error('❌ Status text:', error.response?.statusText);
+    console.error('❌ Response headers:', error.response?.headers);
     console.error('❌ Response data:', error.response?.data);
-    console.error('❌ Full error:', error.response?.data || error.message);
+    console.error('❌ Error code:', error.code);
+    console.error('❌ Error config URL:', error.config?.url);
+
+    // More detailed error info
+    if (error.response?.status === 400) {
+      console.error('⚠️ 400 Bad Request - Possible causes:');
+      console.error('   - Invalid credentials');
+      console.error('   - Malformed request');
+      console.error('   - Safaricom API issue');
+      console.error('   - Sandbox credentials expired');
+    }
+
     throw error;
   }
 }
