@@ -1,15 +1,15 @@
 {
   "files": {
-    "main.css": "/mwanachi-charity-dao/static/css/main.b66a8671.css",
-    "main.js": "/mwanachi-charity-dao/static/js/main.8babca21.js",
+    "main.css": "/mwanachi-charity-dao/static/css/main.604909d5.css",
+    "main.js": "/mwanachi-charity-dao/static/js/main.0ad7e43f.js",
     "static/js/453.b32258ba.chunk.js": "/mwanachi-charity-dao/static/js/453.b32258ba.chunk.js",
     "index.html": "/mwanachi-charity-dao/index.html",
-    "main.b66a8671.css.map": "/mwanachi-charity-dao/static/css/main.b66a8671.css.map",
-    "main.8babca21.js.map": "/mwanachi-charity-dao/static/js/main.8babca21.js.map",
+    "main.604909d5.css.map": "/mwanachi-charity-dao/static/css/main.604909d5.css.map",
+    "main.0ad7e43f.js.map": "/mwanachi-charity-dao/static/js/main.0ad7e43f.js.map",
     "453.b32258ba.chunk.js.map": "/mwanachi-charity-dao/static/js/453.b32258ba.chunk.js.map"
   },
   "entrypoints": [
-    "static/css/main.b66a8671.css",
-    "static/js/main.8babca21.js"
+    "static/css/main.604909d5.css",
+    "static/js/main.0ad7e43f.js"
   ]
 }
