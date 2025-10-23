@@ -5,10 +5,15 @@ const { connectDB } = require('./utils/database');
 
 const app = express();
 
-// Connect to MongoDB on startup
-connectDB().catch(err => {
-  console.error('Failed to connect to MongoDB:', err);
-  console.warn('Continuing with in-memory storage...');
+// Connect to MongoDB on startup (but don't wait - allow fallback)
+console.log('🚀 Starting server...');
+console.log('📍 MONGODB_URI env:', process.env.MONGODB_URI ? 'SET' : 'NOT SET');
+
+connectDB().then(() => {
+  console.log('✅ MongoDB connection initialized');
+}).catch(err => {
+  console.error('❌ Failed to connect to MongoDB:', err);
+  console.warn('⚠️ Continuing with in-memory storage...');
 });
 
 // Middleware
