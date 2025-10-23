@@ -1,15 +1,15 @@
 {
   "files": {
     "main.css": "/mwanachi-charity-dao/static/css/main.dcd24bbb.css",
-    "main.js": "/mwanachi-charity-dao/static/js/main.736c4024.js",
+    "main.js": "/mwanachi-charity-dao/static/js/main.9098524c.js",
     "static/js/453.b32258ba.chunk.js": "/mwanachi-charity-dao/static/js/453.b32258ba.chunk.js",
     "index.html": "/mwanachi-charity-dao/index.html",
     "main.dcd24bbb.css.map": "/mwanachi-charity-dao/static/css/main.dcd24bbb.css.map",
-    "main.736c4024.js.map": "/mwanachi-charity-dao/static/js/main.736c4024.js.map",
+    "main.9098524c.js.map": "/mwanachi-charity-dao/static/js/main.9098524c.js.map",
     "453.b32258ba.chunk.js.map": "/mwanachi-charity-dao/static/js/453.b32258ba.chunk.js.map"
   },
   "entrypoints": [
     "static/css/main.dcd24bbb.css",
-    "static/js/main.736c4024.js"
+    "static/js/main.9098524c.js"
   ]
 }
