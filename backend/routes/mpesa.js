@@ -120,6 +120,39 @@ router.get('/test-credentials', (req, res) => {
   });
 });
 
+// Test endpoint to check if we can reach Safaricom
+router.get('/test-safaricom', async (req, res) => {
+  console.log('🧪 Testing Safaricom connectivity...');
+  try {
+    const url = 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+    console.log('📡 Testing connection to:', url);
+
+    // Try a simple HEAD request first
+    const headResponse = await axios.head(url, {
+      timeout: 5000
+    });
+
+    console.log('✅ HEAD request successful');
+    res.json({
+      status: 'success',
+      message: 'Can reach Safaricom',
+      statusCode: headResponse.status
+    });
+  } catch (error) {
+    console.error('❌ Connection test failed:', error.message);
+    console.error('   Status:', error.response?.status);
+    console.error('   Headers:', error.response?.headers);
+
+    res.json({
+      status: 'error',
+      message: 'Cannot reach Safaricom',
+      error: error.message,
+      statusCode: error.response?.status,
+      headers: error.response?.headers
+    });
+  }
+});
+
 // STK Push endpoint - Initiates M-Pesa payment prompt
 router.post('/stk-push', async (req, res) => {
   try {
