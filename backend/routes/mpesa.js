@@ -139,7 +139,7 @@ router.post('/stk-push', async (req, res) => {
     console.log('📤 Sending STK Push to M-Pesa...');
     console.log('🔗 Callback URL:', `${process.env.BACKEND_URL}/api/mpesa/callback`);
 
-    const response = await axios.post(url, {
+    const requestPayload = {
       BusinessShortCode: MPESA_CONFIG.businessShortcode,
       Password: password,
       Timestamp: timestamp,
@@ -151,7 +151,13 @@ router.post('/stk-push', async (req, res) => {
       CallBackURL: `${process.env.BACKEND_URL}/api/mpesa/callback`,
       AccountReference: accountReference || 'Charity-Donation',
       TransactionDesc: description || 'Donation to Charity DAO'
-    }, {
+    };
+
+    console.log('📋 STK Push Request Payload:', JSON.stringify(requestPayload, null, 2));
+    console.log('🔐 Access Token (first 20 chars):', accessToken.substring(0, 20) + '...');
+    console.log('📡 Sending to URL:', url);
+
+    const response = await axios.post(url, requestPayload, {
       headers: {
         Authorization: `Bearer ${accessToken}`
       }
@@ -168,11 +174,22 @@ router.post('/stk-push', async (req, res) => {
 
   } catch (error) {
     console.error('❌ STK Push error:', error.message);
+    console.error('❌ Error status:', error.response?.status);
+    console.error('❌ Error data:', error.response?.data);
     console.error('❌ Full error:', error.response?.data || error);
+
+    // Log detailed error info
+    if (error.response?.status === 400) {
+      console.error('⚠️ 400 Bad Request from M-Pesa');
+      console.error('   Response:', JSON.stringify(error.response?.data, null, 2));
+      console.error('   Headers:', error.response?.headers);
+    }
+
     res.status(500).json({
       error: 'Failed to initiate payment',
       details: error.message,
-      mpesaError: error.response?.data
+      mpesaError: error.response?.data,
+      status: error.response?.status
     });
   }
 });
