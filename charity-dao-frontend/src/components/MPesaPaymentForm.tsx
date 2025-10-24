@@ -118,8 +118,14 @@ const MPesaPaymentForm: React.FC<MPesaPaymentFormProps> = ({
 
     try {
       const formattedPhone = formatPhoneNumber(phoneNumber);
+      console.log('📱 Initiating M-Pesa payment...');
+      console.log('📞 Phone:', formattedPhone);
+      console.log('💰 Amount:', Math.round(parseFloat(amount)));
 
-      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/stk-push', {
+      const backendUrl = 'https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/stk-push';
+      console.log('🔗 Backend URL:', backendUrl);
+
+      const response = await fetch(backendUrl, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -132,14 +138,18 @@ const MPesaPaymentForm: React.FC<MPesaPaymentFormProps> = ({
         })
       });
 
+      console.log('📊 Response status:', response.status);
+      console.log('📊 Response ok:', response.ok);
+
       const data = await response.json();
+      console.log('📊 Response data:', data);
 
       if (data.success) {
         const requestId = data.data?.CheckoutRequestID;
         if (requestId) {
           setCheckoutRequestId(requestId);
           toast.success('STK Push sent! Check your phone for the prompt.');
-          
+
           if (onPaymentInitiated) {
             onPaymentInitiated(data.data);
           }
@@ -149,7 +159,7 @@ const MPesaPaymentForm: React.FC<MPesaPaymentFormProps> = ({
           const interval = setInterval(async () => {
             pollCount++;
             const completed = await queryPaymentStatus(requestId);
-            
+
             if (completed || pollCount >= 40) {
               clearInterval(interval);
               setPollInterval(null);
@@ -167,7 +177,10 @@ const MPesaPaymentForm: React.FC<MPesaPaymentFormProps> = ({
         setLoading(false);
       }
     } catch (error) {
-      console.error('Error initiating payment:', error);
+      console.error('❌ Error initiating payment:', error);
+      console.error('❌ Error type:', error instanceof TypeError ? 'TypeError' : typeof error);
+      console.error('❌ Error message:', (error as Error).message);
+      console.error('❌ Full error:', error);
       toast.error('Failed to initiate payment. Please try again.');
       setLoading(false);
     }
