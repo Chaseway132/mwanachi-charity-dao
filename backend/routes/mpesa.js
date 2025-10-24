@@ -53,10 +53,10 @@ async function getMpesaAccessToken() {
       'Content-Type': 'application/json'
     });
 
+    // Try without Content-Type header (some APIs don't like it on GET requests)
     const response = await axios.get(url, {
       headers: {
-        Authorization: `Basic ${auth}`,
-        'Content-Type': 'application/json'
+        Authorization: `Basic ${auth}`
       },
       timeout: 10000
     });
