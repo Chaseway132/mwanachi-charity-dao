@@ -25,6 +25,16 @@ async function getMpesaAccessToken() {
       consumerSecretLength: MPESA_CONFIG.consumerSecret?.length || 0
     });
 
+    // Log the actual credentials (first and last few chars only for security)
+    if (MPESA_CONFIG.consumerKey) {
+      const key = MPESA_CONFIG.consumerKey;
+      console.log('🔑 Consumer Key:', key.substring(0, 5) + '...' + key.substring(key.length - 5));
+    }
+    if (MPESA_CONFIG.consumerSecret) {
+      const secret = MPESA_CONFIG.consumerSecret;
+      console.log('🔑 Consumer Secret:', secret.substring(0, 5) + '...' + secret.substring(secret.length - 5));
+    }
+
     if (!MPESA_CONFIG.consumerKey || !MPESA_CONFIG.consumerSecret) {
       console.error('❌ Missing credentials:');
       console.error('   MPESA_CONSUMER_KEY:', process.env.MPESA_CONSUMER_KEY ? 'SET' : 'NOT SET');
@@ -49,8 +59,7 @@ async function getMpesaAccessToken() {
 
     console.log('📡 Making axios request to:', url);
     console.log('📡 Request headers:', {
-      Authorization: `Basic ${auth.substring(0, 20)}...`,
-      'Content-Type': 'application/json'
+      Authorization: `Basic ${auth.substring(0, 20)}...`
     });
 
     // Try without Content-Type header (some APIs don't like it on GET requests)
@@ -89,6 +98,27 @@ async function getMpesaAccessToken() {
     throw error;
   }
 }
+
+// Test endpoint to verify credentials are set
+router.get('/test-credentials', (req, res) => {
+  console.log('🧪 Testing M-Pesa credentials...');
+  const hasKey = !!MPESA_CONFIG.consumerKey;
+  const hasSecret = !!MPESA_CONFIG.consumerSecret;
+  const hasShortcode = !!MPESA_CONFIG.businessShortcode;
+  const hasPasskey = !!MPESA_CONFIG.passkey;
+
+  res.json({
+    environment: MPESA_CONFIG.environment,
+    hasConsumerKey: hasKey,
+    hasConsumerSecret: hasSecret,
+    hasBusinessShortcode: hasShortcode,
+    hasPasskey: hasPasskey,
+    consumerKeyLength: MPESA_CONFIG.consumerKey?.length || 0,
+    consumerSecretLength: MPESA_CONFIG.consumerSecret?.length || 0,
+    businessShortcode: MPESA_CONFIG.businessShortcode,
+    allSet: hasKey && hasSecret && hasShortcode && hasPasskey
+  });
+});
 
 // STK Push endpoint - Initiates M-Pesa payment prompt
 router.post('/stk-push', async (req, res) => {
