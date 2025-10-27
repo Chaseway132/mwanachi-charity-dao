@@ -25,6 +25,13 @@ contract DonationTracking {
         fundAllocationContract = FundAllocation(_fundAllocationContract);
     }
 
+    // Accept direct ETH transfers and forward to FundAllocation
+    receive() external payable {
+        // Forward funds to FundAllocation contract
+        (bool success, ) = address(fundAllocationContract).call{value: msg.value}("");
+        require(success, "Failed to transfer funds to FundAllocation contract");
+    }
+
     function donate(address _donor) external payable {
         require(msg.value > 0, "Donation amount must be greater than zero.");
 

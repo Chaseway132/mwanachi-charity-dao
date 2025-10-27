@@ -33,7 +33,7 @@ contract CharityDAOPlatform {
     // Constructor initializes contract dependencies
     constructor(
         address _proposalContract,
-        address _donationContract,
+        address payable _donationContract,
         address _votingContract,
         address payable _fundAllocationContract
     ) {

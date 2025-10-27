@@ -18,13 +18,13 @@ contract VotingGovernance {
 
     constructor(
         address _proposalContract,
-        address _donationContract,
+        address payable _donationContract,
         address _owner
     ) {
         require(_proposalContract != address(0), "Invalid ProposalManagement address");
         require(_donationContract != address(0), "Invalid DonationTracking address");
         require(_owner != address(0), "Invalid owner address");
-        
+
         proposalContract = ProposalManagement(_proposalContract);
         donationContract = DonationTracking(_donationContract);
         owner = _owner;
