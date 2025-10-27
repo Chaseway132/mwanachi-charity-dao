@@ -27,10 +27,10 @@ async function main() {
     const fundAllocationAddress = await fundAllocation.getAddress();
     console.log("FundAllocation deployed to:", fundAllocationAddress);
 
-    // Deploy DonationTracking contract
+    // Deploy DonationTracking contract with FundAllocation address
     console.log("\nDeploying DonationTracking...");
     const DonationTracking = await ethers.getContractFactory("DonationTracking");
-    const donationTracking = await DonationTracking.deploy();
+    const donationTracking = await DonationTracking.deploy(fundAllocationAddress);
     await donationTracking.waitForDeployment();
     const donationTrackingAddress = await donationTracking.getAddress();
     console.log("DonationTracking deployed to:", donationTrackingAddress);
@@ -40,7 +40,8 @@ async function main() {
     const VotingGovernance = await ethers.getContractFactory("VotingGovernance");
     const votingGovernance = await VotingGovernance.deploy(
       proposalManagementAddress,
-      donationTrackingAddress
+      donationTrackingAddress,
+      deployerAddress
     );
     await votingGovernance.waitForDeployment();
     const votingGovernanceAddress = await votingGovernance.getAddress();
@@ -80,10 +81,8 @@ async function main() {
     // Set up signers
     console.log("\nSetting up signers...");
 
-    // Add deployer as a signer
-    console.log("Adding deployer as signer:", deployerAddress);
-    const tx4 = await proposalManagement.addSigner(deployerAddress);
-    await tx4.wait();
+    // Deployer is already added as a signer in the constructor
+    console.log("Deployer is already a signer:", deployerAddress);
 
     // Save contract addresses
     const addresses = {

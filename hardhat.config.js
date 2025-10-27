@@ -16,10 +16,18 @@ module.exports = {
       ]
     },
 
-    // Polygon Mumbai Testnet
+    // Polygon Mumbai Testnet (deprecated, kept for reference)
     mumbai: {
       url: process.env.MUMBAI_RPC_URL || "https://rpc-mumbai.maticvigil.com",
       chainId: 80001,
+      accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
+      gasPrice: 1000000000 // 1 gwei
+    },
+
+    // Polygon Amoy Testnet (NEW - replaces Mumbai)
+    amoy: {
+      url: process.env.AMOY_RPC_URL || "https://polygon-amoy-testnet.rpc.grove.city/v1/01fdb492",
+      chainId: 80002,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
       gasPrice: 1000000000 // 1 gwei
     },
