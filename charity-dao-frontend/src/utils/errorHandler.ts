@@ -6,6 +6,7 @@ export enum ErrorType {
   INSUFFICIENT_FUNDS = 'INSUFFICIENT_FUNDS',
   CONTRACT_ERROR = 'CONTRACT_ERROR',
   NETWORK_ERROR = 'NETWORK_ERROR',
+  RPC_CIRCUIT_BREAKER = 'RPC_CIRCUIT_BREAKER',
   UNKNOWN_ERROR = 'UNKNOWN_ERROR'
 }
 
@@ -70,10 +71,21 @@ export const handleTransactionError = (
       ? `Contract error: ${reason}` 
       : 'Contract rejected the transaction';
   }
+  // Check for RPC circuit breaker errors
+  else if (
+    error.message && (
+      error.message.includes('circuit breaker') ||
+      error.message.includes('isBrokenCircuitError') ||
+      (error.code === -32603 && error.message && error.message.includes('Execution prevented'))
+    )
+  ) {
+    errorType = ErrorType.RPC_CIRCUIT_BREAKER;
+    errorMessage = 'RPC endpoint is temporarily unavailable. Please switch to a different RPC endpoint in MetaMask settings.';
+  }
   // Check for network errors
   else if (
     error.message && (
-      error.message.includes('network') || 
+      error.message.includes('network') ||
       error.message.includes('connection') ||
       error.message.includes('timeout')
     )
@@ -108,6 +120,9 @@ export const handleTransactionError = (
         break;
       case ErrorType.NETWORK_ERROR:
         toastMessage = '🌐 Network error. Please check your connection';
+        break;
+      case ErrorType.RPC_CIRCUIT_BREAKER:
+        toastMessage = '⚠️ RPC endpoint overloaded. Switch to: https://rpc-amoy.polygon.technology/ in MetaMask settings';
         break;
       default:
         toastMessage = `❌ ${errorMessage}`;
