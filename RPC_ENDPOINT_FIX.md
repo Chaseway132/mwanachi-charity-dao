@@ -73,7 +73,35 @@ In MetaMask, you should see:
 2. Try making a donation
 3. The transaction should go through!
 
+## What Changed in the Code
+- ✅ Updated hardhat.config.js to use official Polygon Amoy RPC
+- ✅ Added circuit breaker error detection in frontend
+- ✅ Added helpful error messages when RPC is overloaded
+- ✅ Frontend now auto-reloads when contract addresses change
+
+## Troubleshooting
+
+### Still Getting Circuit Breaker Error?
+1. **Try a different RPC endpoint** from the list above
+2. **Wait 5-10 minutes** - the circuit breaker may reset
+3. **Check Polygon status**: https://status.polygon.technology/
+4. **Clear MetaMask cache**: Settings → Advanced → Clear activity tab data
+
+### Transaction Still Failing?
+1. Make sure you have enough MATIC for gas fees
+2. Check that you're on **Polygon Amoy** network (Chain ID: 80002)
+3. Verify the RPC URL is correct in MetaMask
+4. Try a smaller donation amount first
+
+### How to Check Your RPC Configuration
+In MetaMask:
+1. Click the network dropdown at the top
+2. Click **Polygon Amoy**
+3. Click the **three dots** next to it
+4. Select **Edit**
+5. Verify the RPC URL matches one from the recommended list
+
 ---
 
-**Note**: The smart contracts are working perfectly. This is just an RPC connectivity issue.
+**Note**: The smart contracts are working perfectly. This is just an RPC connectivity issue. Once you switch to a stable RPC endpoint, everything will work smoothly!
 
