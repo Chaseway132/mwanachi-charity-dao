@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
 import { getProvider } from '../utils/web3';
-import { CHARITY_DAO_PLATFORM, FUND_ALLOCATION } from '../utils/contracts';
+import { DONATION_TRACKING, FUND_ALLOCATION } from '../utils/contracts';
 import { getFundAllocationContract } from '../utils/contracts';
 
 // Add a safe toast utility function to prevent runtime errors
@@ -53,11 +53,11 @@ const TreasuryStatus: React.FC = () => {
       setIsLoading(true);
       const provider = await getProvider();
 
-      // Get platform balance
-      const platformBalanceWei = await provider.getBalance(CHARITY_DAO_PLATFORM);
+      // Get platform balance from DonationTracking contract (where donations are held temporarily)
+      const platformBalanceWei = await provider.getBalance(DONATION_TRACKING);
       setPlatformBalance(ethers.formatEther(platformBalanceWei));
 
-      // Get fund balance from contract
+      // Get fund balance from FundAllocation contract
       try {
         // Try to get balance using contract method first
         const fundContract = await getFundAllocationContract(provider);
