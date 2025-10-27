@@ -4,6 +4,7 @@ import { toast, ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import { getContractInstances } from './utils/contractHelpers';
 import { getProvider } from './utils/web3';
+import { DEPLOYED_ADDRESSES } from './config/deployedAddresses';
 import { ProposalProvider, useProposals } from './contexts/ProposalContext';
 import DonationForm from './components/DonationForm';
 import DonationList from './components/DonationList';
@@ -113,6 +114,28 @@ const AppContent: React.FC = () => {
     };
 
     checkConnection();
+  }, []);
+
+  // Check for contract address updates and reload if needed
+  useEffect(() => {
+    const checkForAddressUpdates = async () => {
+      try {
+        const storedVersion = localStorage.getItem('deployedAddressesVersion');
+        const currentVersion = JSON.stringify(DEPLOYED_ADDRESSES);
+
+        if (storedVersion && storedVersion !== currentVersion) {
+          console.log('Contract addresses have been updated! Reloading page...');
+          localStorage.setItem('deployedAddressesVersion', currentVersion);
+          window.location.reload();
+        } else if (!storedVersion) {
+          localStorage.setItem('deployedAddressesVersion', currentVersion);
+        }
+      } catch (error) {
+        console.error('Error checking for address updates:', error);
+      }
+    };
+
+    checkForAddressUpdates();
   }, []);
 
   // Check if the connected wallet is the contract owner
