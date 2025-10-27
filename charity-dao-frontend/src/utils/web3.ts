@@ -2,15 +2,30 @@ import { ethers } from 'ethers';
 
 let provider: ethers.BrowserProvider | null = null;
 
+// Fallback RPC endpoints for Polygon Amoy
+const FALLBACK_RPC_URLS = [
+  'https://rpc-amoy.polygon.technology/',
+  'https://polygon-amoy.blockpi.network/v1/rpc/public',
+  'https://amoy.drpc.org',
+  'https://amoy-rpc.c.multiversx.com/'
+];
+
 export const getProvider = async (forceNew = false) => {
   if (!provider || forceNew) {
     if (window.ethereum) {
       provider = new ethers.BrowserProvider(window.ethereum);
     } else {
-      throw new Error('Please install MetaMask or another Web3 wallet');
+      // Fallback to public RPC if MetaMask not available
+      console.warn('MetaMask not found, using fallback RPC endpoint');
+      provider = new ethers.JsonRpcProvider(FALLBACK_RPC_URLS[0]);
     }
   }
   return provider;
+};
+
+// Get a fallback provider if MetaMask fails
+export const getFallbackProvider = () => {
+  return new ethers.JsonRpcProvider(FALLBACK_RPC_URLS[0]);
 };
 
 export const getSigner = async () => {

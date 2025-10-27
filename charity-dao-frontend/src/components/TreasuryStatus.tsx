@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ethers } from 'ethers';
 import { toast } from 'react-toastify';
-import { getProvider } from '../utils/web3';
+import { getProvider, getFallbackProvider } from '../utils/web3';
 import { DONATION_TRACKING, FUND_ALLOCATION } from '../utils/contracts';
 import { getFundAllocationContract } from '../utils/contracts';
 
@@ -51,23 +51,41 @@ const TreasuryStatus: React.FC = () => {
   const loadBalances = async () => {
     try {
       setIsLoading(true);
-      const provider = await getProvider();
+      let provider = await getProvider();
 
-      // Get platform balance from DonationTracking contract (where donations are held temporarily)
-      const platformBalanceWei = await provider.getBalance(DONATION_TRACKING);
-      setPlatformBalance(ethers.formatEther(platformBalanceWei));
+      // Try to get balances, fallback to public RPC if MetaMask fails
+      let platformBalanceWei;
+      let fundBalanceWei;
+
+      try {
+        // Get platform balance from DonationTracking contract (where donations are held temporarily)
+        platformBalanceWei = await provider.getBalance(DONATION_TRACKING);
+        setPlatformBalance(ethers.formatEther(platformBalanceWei));
+      } catch (error) {
+        console.warn('MetaMask RPC failed for platform balance, using fallback RPC:', error);
+        const fallbackProvider = getFallbackProvider();
+        platformBalanceWei = await fallbackProvider.getBalance(DONATION_TRACKING);
+        setPlatformBalance(ethers.formatEther(platformBalanceWei));
+      }
 
       // Get fund balance from FundAllocation contract
       try {
         // Try to get balance using contract method first
         const fundContract = await getFundAllocationContract(provider);
-        const fundBalanceWei = await fundContract.getBalance();
+        fundBalanceWei = await fundContract.getBalance();
         setFundBalance(ethers.formatEther(fundBalanceWei));
       } catch (contractError) {
         console.warn('Error getting balance from contract, falling back to direct check:', contractError);
-        // Fallback to direct balance check
-        const fundBalanceWei = await provider.getBalance(FUND_ALLOCATION);
-        setFundBalance(ethers.formatEther(fundBalanceWei));
+        try {
+          // Fallback to direct balance check with MetaMask provider
+          fundBalanceWei = await provider.getBalance(FUND_ALLOCATION);
+          setFundBalance(ethers.formatEther(fundBalanceWei));
+        } catch (fallbackError) {
+          console.warn('MetaMask RPC failed for fund balance, using fallback RPC:', fallbackError);
+          const fallbackProvider = getFallbackProvider();
+          fundBalanceWei = await fallbackProvider.getBalance(FUND_ALLOCATION);
+          setFundBalance(ethers.formatEther(fundBalanceWei));
+        }
       }
 
       // Get M-Pesa donations
