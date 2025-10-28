@@ -23,3 +23,9 @@ coverage.json
 
 # Hardhat Ignition default folder for deployments against a local node
 ignition/deployments/chain-31337
+
+# Frontend config - prevent old address files from being committed
+# Only deployedAddresses.ts should be committed (TypeScript for type safety)
+charity-dao-frontend/src/config/deployedAddresses.json
+charity-dao-frontend/src/config/addresses.ts
+charity-dao-frontend/src/contracts/deployedAddresses.ts

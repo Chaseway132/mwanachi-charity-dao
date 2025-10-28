@@ -32,10 +32,10 @@ export const DEPLOYED_ADDRESSES = {
   fs.writeFileSync(destPath, tsContent);
   console.log("Addresses copied to:", destPath);
 
-  // Also copy as JSON for any components that might use it directly
-  const jsonDestPath = path.join(destDir, "deployedAddresses.json");
-  fs.writeFileSync(jsonDestPath, JSON.stringify(addresses, null, 2));
-  console.log("Addresses also copied as JSON to:", jsonDestPath);
+  // NOTE: We intentionally do NOT create a JSON file here
+  // Reason: JSON files can be imported directly and bypass TypeScript type safety
+  // This ensures all address imports go through the TypeScript file for consistency
+  // If a JSON file exists from old deployments, it should be deleted
 
   console.log("Address copying completed successfully!");
 }
