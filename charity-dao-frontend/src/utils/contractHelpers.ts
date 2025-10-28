@@ -1,19 +1,19 @@
 import { ethers } from 'ethers';
-import { 
-  CHARITY_DAO_PLATFORM, 
-  DONATION_TRACKING, 
-  FUND_ALLOCATION, 
-  PROPOSAL_MANAGEMENT, 
-  VOTING_GOVERNANCE 
+import {
+  CHARITY_DAO_PLATFORM,
+  DONATION_TRACKING,
+  FUND_ALLOCATION,
+  PROPOSAL_MANAGEMENT,
+  VOTING_GOVERNANCE
 } from './contracts';
-import { 
+import {
   CharityDAOPlatformABI_Interface,
   DonationTrackingABI_Interface,
   FundAllocationABI_Interface,
   ProposalManagementABI_Interface,
   VotingGovernanceABI_Interface
 } from './abiUtils';
-import { getProvider as getEthersProvider } from './provider';
+import { getProvider as getEthersProvider, getFallbackProvider } from './provider';
 
 // Export getProvider
 export const getProvider = getEthersProvider;
@@ -46,38 +46,47 @@ export const getDonationTrackingContract = async (provider?: ethers.Provider) =>
 
 // Helper function to get contract instances
 export const getContractInstances = async () => {
-  const provider = getProvider();
-  
+  let provider = getProvider();
+
+  // Try to use MetaMask provider, fallback to public RPC if it fails
+  try {
+    // Test if the provider works by making a simple call
+    await provider.getNetwork();
+  } catch (error) {
+    console.warn('MetaMask provider failed, using fallback RPC:', error);
+    provider = getFallbackProvider();
+  }
+
   const platformContract = new ethers.Contract(
     CHARITY_DAO_PLATFORM,
     CharityDAOPlatformABI_Interface,
     provider
   );
-  
+
   const donationContract = new ethers.Contract(
     DONATION_TRACKING,
     DonationTrackingABI_Interface,
     provider
   );
-  
+
   const fundContract = new ethers.Contract(
     FUND_ALLOCATION,
     FundAllocationABI_Interface,
     provider
   );
-  
+
   const proposalContract = new ethers.Contract(
     PROPOSAL_MANAGEMENT,
     ProposalManagementABI_Interface,
     provider
   );
-  
+
   const votingContract = new ethers.Contract(
     VOTING_GOVERNANCE,
     VotingGovernanceABI_Interface,
     provider
   );
-  
+
   return {
     platformContract,
     donationContract,

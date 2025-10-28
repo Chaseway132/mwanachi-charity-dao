@@ -7,13 +7,27 @@ declare global {
   }
 }
 
+// Fallback RPC endpoints for Polygon Amoy
+const FALLBACK_RPC_URLS = [
+  'https://rpc-amoy.polygon.technology/',
+  'https://polygon-amoy.blockpi.network/v1/rpc/public',
+  'https://amoy.drpc.org',
+  'https://amoy-rpc.c.multiversx.com/'
+];
+
 export const getProvider = () => {
   if (!window.ethereum) {
-    throw new Error('MetaMask is not installed');
+    console.warn('MetaMask not found, using fallback RPC endpoint');
+    return new ethers.JsonRpcProvider(FALLBACK_RPC_URLS[0]);
   }
 
   // Create and return a BrowserProvider
   return new ethers.BrowserProvider(window.ethereum);
+};
+
+// Get a fallback provider if MetaMask fails
+export const getFallbackProvider = () => {
+  return new ethers.JsonRpcProvider(FALLBACK_RPC_URLS[0]);
 };
 
 // This function is used to check and switch networks
