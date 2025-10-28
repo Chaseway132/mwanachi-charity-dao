@@ -223,11 +223,16 @@ const AppContent: React.FC = () => {
   const loadDonations = useCallback(async () => {
     try {
       setIsLoading(true);
-      console.log('Loading donations...');
+      console.log('🔄 Loading donations...');
+      console.log('Getting contract instances...');
       const { platformContract } = await getContractInstances();
+      console.log('✅ Got contract instances');
+      console.log('Platform contract address:', platformContract.target);
 
+      console.log('Calling getAllDonations()...');
       const rawDonations = await platformContract.getAllDonations();
-      console.log('Raw Donations:', rawDonations);
+      console.log('✅ Got raw donations:', rawDonations);
+      console.log('Number of donations:', rawDonations.length);
 
       // Format the donations
       const formattedDonations = rawDonations

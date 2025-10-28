@@ -47,14 +47,19 @@ export const getDonationTrackingContract = async (provider?: ethers.Provider) =>
 // Helper function to get contract instances
 export const getContractInstances = async () => {
   let provider = getProvider();
+  let usingFallback = false;
 
   // Try to use MetaMask provider, fallback to public RPC if it fails
   try {
     // Test if the provider works by making a simple call
+    console.log('Testing MetaMask provider...');
     await provider.getNetwork();
+    console.log('✅ MetaMask provider working');
   } catch (error) {
-    console.warn('MetaMask provider failed, using fallback RPC:', error);
+    console.warn('⚠️  MetaMask provider failed, using fallback RPC:', error);
     provider = getFallbackProvider();
+    usingFallback = true;
+    console.log('✅ Using fallback RPC provider');
   }
 
   const platformContract = new ethers.Contract(
