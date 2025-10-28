@@ -4,6 +4,7 @@ import { toast } from 'react-toastify';
 import { getProvider, getFallbackProvider } from '../utils/web3';
 import { DONATION_TRACKING, FUND_ALLOCATION } from '../utils/contracts';
 import { getFundAllocationContract } from '../utils/contracts';
+import { API_BASE_URL } from '../config';
 
 // Add a safe toast utility function to prevent runtime errors
 const safeToast = {
@@ -90,7 +91,7 @@ const TreasuryStatus: React.FC = () => {
 
       // Get M-Pesa donations
       try {
-        const response = await fetch('http://localhost:5000/api/donations');
+        const response = await fetch(`${API_BASE_URL}/api/donations`);
         if (response.ok) {
           const data = await response.json();
           const mpesaDonations = data.donations.filter((d: any) => d.mpesaReceiptNumber);
@@ -99,7 +100,7 @@ const TreasuryStatus: React.FC = () => {
           setMpesaDonationCount(mpesaDonations.length);
         }
       } catch (error) {
-        console.warn('Error loading M-Pesa donations:', error);
+        console.warn('Error loading M-Pesa donations from:', `${API_BASE_URL}/api/donations`, error);
         setMpesaBalance('0.0');
         setMpesaDonationCount(0);
       }

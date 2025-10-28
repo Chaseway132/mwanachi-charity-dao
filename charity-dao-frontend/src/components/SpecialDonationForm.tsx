@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { toast } from 'react-toastify';
 import { Loader } from 'lucide-react';
+import { API_BASE_URL } from '../config';
 
 interface SpecialDonationFormProps {
   campaignId: number;
@@ -46,7 +47,7 @@ const SpecialDonationForm: React.FC<SpecialDonationFormProps> = ({ campaignId, o
       const formattedPhone = formatPhoneNumber(phoneNumber);
 
       // Initiate STK Push
-      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/stk-push', {
+      const response = await fetch(`${API_BASE_URL}/api/mpesa/stk-push`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -71,7 +72,7 @@ const SpecialDonationForm: React.FC<SpecialDonationFormProps> = ({ campaignId, o
           attempts++;
 
           try {
-            const statusResponse = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/mpesa/query-status', {
+            const statusResponse = await fetch(`${API_BASE_URL}/api/mpesa/query-status`, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
@@ -141,7 +142,7 @@ const SpecialDonationForm: React.FC<SpecialDonationFormProps> = ({ campaignId, o
 
   const recordDonation = async (phone: string, amount: number, mpesaReceipt: string) => {
     try {
-      await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/donations', {
+      await fetch(`${API_BASE_URL}/api/donations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

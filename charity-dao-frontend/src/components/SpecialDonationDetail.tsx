@@ -55,10 +55,11 @@ const SpecialDonationDetail: React.FC<SpecialDonationDetailProps> = ({ campaignI
 
   const fetchCampaignDetails = async () => {
     try {
+      const { API_BASE_URL } = await import('../config');
       const [campaignRes, donationsRes, updatesRes] = await Promise.all([
-        fetch(`https://mwanachi-charity-dao-backend.onrender.com/api/special-donations/${campaignId}`),
-        fetch(`https://mwanachi-charity-dao-backend.onrender.com/api/special-donations/${campaignId}/donations`),
-        fetch(`https://mwanachi-charity-dao-backend.onrender.com/api/special-donations/${campaignId}/updates`)
+        fetch(`${API_BASE_URL}/api/special-donations/${campaignId}`),
+        fetch(`${API_BASE_URL}/api/special-donations/${campaignId}/donations`),
+        fetch(`${API_BASE_URL}/api/special-donations/${campaignId}/updates`)
       ]);
 
       const campaignData = await campaignRes.json();
