@@ -44,11 +44,18 @@ async function main() {
   console.log("📝 Donations Recorded:");
   try {
     const donations = await DonationTracking.getAllDonations();
+    const donationCount = await DonationTracking.donationCount();
     console.log(`  Total donations: ${donations.length}`);
+    console.log(`  Donation count from contract: ${donationCount.toString()}`);
+
+    let totalDonated = 0n;
     if (donations.length > 0) {
       donations.forEach((d, i) => {
-        console.log(`    ${i + 1}. ID: ${d.id}, Donor: ${d.donor}, Amount: ${hre.ethers.formatEther(d.amount)} ETH`);
+        const amount = BigInt(d.amount);
+        totalDonated += amount;
+        console.log(`    ${i + 1}. ID: ${d.id}, Donor: ${d.donor}, Amount: ${hre.ethers.formatEther(amount)} ETH, Time: ${new Date(Number(d.timestamp) * 1000).toLocaleString()}`);
       });
+      console.log(`  Total donated: ${hre.ethers.formatEther(totalDonated)} ETH`);
     } else {
       console.log("  ❌ NO DONATIONS RECORDED!");
     }
@@ -67,8 +74,13 @@ async function main() {
   }
 
   console.log("\n🎯 Diagnosis:");
+
+  // Check CharityDAOPlatform balance
+  const platformBalance = await hre.ethers.provider.getBalance(addresses.CHARITY_DAO_PLATFORM);
+  console.log(`  CharityDAOPlatform Balance: ${hre.ethers.formatEther(platformBalance)} ETH`);
+
   if (dtBalance > 0n && faBalance === 0n) {
-    console.log("  ⚠️  ISSUE FOUND:");
+    console.log("\n  ⚠️  ISSUE FOUND:");
     console.log("  - Funds are in DonationTracking");
     console.log("  - But NOT transferred to FundAllocation");
     console.log("  - This means donate() function is NOT being called");
@@ -78,14 +90,15 @@ async function main() {
     console.log("  - Which calls DonationTracking.donate()");
     console.log("  - Which records the donation AND transfers to FundAllocation");
   } else if (dtBalance === 0n && faBalance > 0n) {
-    console.log("  ✅ WORKING CORRECTLY:");
+    console.log("\n  ✅ WORKING CORRECTLY:");
     console.log("  - Funds are in FundAllocation");
     console.log("  - Donations are being recorded");
+    console.log("  - Ready for proposals to use these funds");
   } else if (dtBalance === 0n && faBalance === 0n) {
-    console.log("  ⚠️  NO FUNDS:");
+    console.log("\n  ⚠️  NO FUNDS:");
     console.log("  - No donations have been made yet");
   } else {
-    console.log("  ⚠️  MIXED STATE:");
+    console.log("\n  ⚠️  MIXED STATE:");
     console.log("  - Funds in both contracts");
     console.log("  - Some donations may not have been transferred");
   }
