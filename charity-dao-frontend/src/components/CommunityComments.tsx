@@ -34,7 +34,7 @@ const CommunityComments: React.FC = () => {
   const [replyAuthorName, setReplyAuthorName] = useState('');
   const [replyAuthorPhone, setReplyAuthorPhone] = useState('');
 
-  const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+  const API_URL = process.env.REACT_APP_API_URL || 'https://mwanachi-charity-dao-backend.onrender.com';
 
   useEffect(() => {
     fetchAllComments();
