@@ -31,7 +31,7 @@ export type ContractConfigs = typeof CONTRACT_CONFIGS;
 export const NETWORK_CONFIG = {
   chainId: "0x13882", // 80002 in hex (Polygon Amoy)
   chainName: "Polygon Amoy Testnet",
-  rpcUrls: ["https://rpc-amoy.polygon.technology/"],
+    rpcUrls: ["https://polygon-amoy-bor-rpc.publicnode.com"],
   nativeCurrency: {
     name: "POL",
     symbol: "POL",
