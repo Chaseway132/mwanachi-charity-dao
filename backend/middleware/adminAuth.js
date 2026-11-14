@@ -236,32 +236,40 @@ const adminLogin = (req, res) => {
 };
 
 /**
- * Simple username/password login (for development/testing)
+ * Simple username/password login
  * Frontend sends: { username, password }
- * Backend verifies credentials and returns JWT token
+ * Credentials come from server environment variables.
  */
 const adminLoginSimple = (req, res) => {
-  console.log('adminLoginSimple called with:', { username: req.body.username, password: '***' });
   try {
     const { username, password } = req.body;
 
     // Validate required fields
     if (!username || !password) {
-      console.log('Missing username or password');
       return res.status(400).json({
         success: false,
         error: 'Username and password are required'
       });
     }
 
-    // Simple credential check (in production, use bcrypt and database)
-    // Demo credentials: admin / admin123
-    const validCredentials = {
-      'admin': 'admin123',
-      'superadmin': 'super123'
+    // Credentials come from environment variables set on the server
+    // (ADMIN_USERNAME / ADMIN_PASSWORD) - never from the source code.
+    const expectedUser = process.env.ADMIN_USERNAME;
+    const expectedPass = process.env.ADMIN_PASSWORD;
+
+    if (!expectedUser || !expectedPass) {
+      console.error('Admin login disabled: ADMIN_USERNAME / ADMIN_PASSWORD not set');
+      return res.status(503).json({ success: false, error: 'Admin login is not configured' });
+    }
+
+    const crypto = require('crypto');
+    const same = (a, b) => {
+      const ha = crypto.createHash('sha256').update(String(a)).digest();
+      const hb = crypto.createHash('sha256').update(String(b)).digest();
+      return crypto.timingSafeEqual(ha, hb);
     };
 
-    if (!validCredentials[username] || validCredentials[username] !== password) {
+    if (!(same(username, expectedUser) & same(password, expectedPass))) {
       return res.status(401).json({
         success: false,
         error: 'Invalid username or password'
@@ -306,4 +314,3 @@ module.exports = {
   DEFAULT_ADMIN_WALLET,
   JWT_SECRET
 };
-
