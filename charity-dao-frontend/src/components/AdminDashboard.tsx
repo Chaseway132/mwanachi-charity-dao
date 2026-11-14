@@ -254,8 +254,6 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onCampaignCre
           <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
             <p className="text-sm text-blue-800">
               <strong>Demo Credentials:</strong><br/>
-              Username: admin<br/>
-              Password: admin123
             </p>
           </div>
         </div>
