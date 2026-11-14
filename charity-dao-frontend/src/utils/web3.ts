@@ -4,10 +4,9 @@ let provider: ethers.BrowserProvider | null = null;
 
 // Fallback RPC endpoints for Polygon Amoy
 const FALLBACK_RPC_URLS = [
-  'https://rpc-amoy.polygon.technology/',
-  'https://polygon-amoy.blockpi.network/v1/rpc/public',
-  'https://amoy.drpc.org',
-  'https://amoy-rpc.c.multiversx.com/'
+  'https://polygon-amoy-bor-rpc.publicnode.com',
+  'https://polygon-amoy.drpc.org',
+  'https://polygon-amoy.blockpi.network/v1/rpc/public'
 ];
 
 export const getProvider = async (forceNew = false) => {
