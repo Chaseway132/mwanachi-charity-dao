@@ -84,7 +84,7 @@ const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout, onCampaignCre
     try {
       setIsLoading(true);
 
-      const response = await fetch('http://localhost:5000/api/admin/login-simple', {
+      const response = await fetch('https://mwanachi-charity-dao-backend.onrender.com/api/admin/login-simple', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
