@@ -29,14 +29,15 @@ export type ContractConfigs = typeof CONTRACT_CONFIGS;
 
 // Network configuration
 export const NETWORK_CONFIG = {
-  chainId: "0x539", // 1337 in hex
-  chainName: "Ganache",
-  rpcUrls: ["http://127.0.0.1:7545"],
+  chainId: "0x13882", // 80002 in hex (Polygon Amoy)
+  chainName: "Polygon Amoy Testnet",
+  rpcUrls: ["https://rpc-amoy.polygon.technology/"],
   nativeCurrency: {
-    name: "ETH",
-    symbol: "ETH",
+    name: "POL",
+    symbol: "POL",
     decimals: 18
-  }
+  },
+  blockExplorerUrls: ["https://amoy.polygonscan.com"]
 } as const;
 
 // Get contract instances with proper error handling
