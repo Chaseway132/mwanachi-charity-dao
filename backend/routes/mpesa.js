@@ -225,7 +225,13 @@ router.post('/stk-push', async (req, res) => {
   }
 });
 
-// M-Pesa Callback endpoint
+// Results received from Safaricom's callback, keyed by CheckoutRequestID.
+// The frontend polls /query-status; we answer from here first so we do not
+// hammer Safaricom (which rate-limits with 429 / dropped connections).
+const paymentResults = new Map();   // checkoutRequestId -> { ResultCode, ResultDesc }
+const lastQueryAt = new Map();      // checkoutRequestId -> timestamp of last Safaricom query
+const STILL_PENDING = { ResultCode: '1032', ResultDesc: 'Payment still being processed' };
+
 router.post('/callback', async (req, res) => {
   try {
     const { Body } = req.body;
@@ -235,25 +241,29 @@ router.post('/callback', async (req, res) => {
     // Acknowledge receipt immediately
     res.json({ ResultCode: 0, ResultDesc: 'Accepted' });
 
+    // Remember the outcome so /query-status can answer without calling Safaricom
+    if (Body && Body.stkCallback && Body.stkCallback.CheckoutRequestID) {
+      paymentResults.set(Body.stkCallback.CheckoutRequestID, {
+        ResultCode: String(Body.stkCallback.ResultCode),
+        ResultDesc: Body.stkCallback.ResultDesc || ''
+      });
+    }
+
     // Process callback asynchronously
     if (Body.stkCallback.ResultCode === 0) {
-      // Payment successful
       const callbackMetadata = Body.stkCallback.CallbackMetadata.Item;
       const paymentData = {};
-
       callbackMetadata.forEach(item => {
         paymentData[item.Name] = item.Value;
       });
 
       console.log('✅ Payment successful:', paymentData);
 
-      // Extract payment details
       const amount = paymentData.Amount;
       const mpesaReceiptNumber = paymentData.MpesaReceiptNumber;
       const transactionDate = paymentData.TransactionDate;
       const phoneNumber = paymentData.PhoneNumber;
 
-      // Record donation in backend and blockchain
       try {
         const donation = await recordMPesaDonation({
           amount,
@@ -261,39 +271,43 @@ router.post('/callback', async (req, res) => {
           phoneNumber,
           transactionDate
         });
-
         console.log('✅ Donation recorded successfully:', donation);
-
-        // TODO: Send notification to frontend via WebSocket
-        // TODO: Update frontend with donation confirmation
       } catch (recordError) {
         console.error('❌ Error recording donation:', recordError);
       }
     } else {
       console.log('❌ Payment failed or cancelled:', Body.stkCallback.ResultCode);
-      // Handle failed payment
-      const resultDesc = Body.stkCallback.ResultDesc || 'Payment failed';
-      console.log('Payment failure reason:', resultDesc);
+      console.log('Payment failure reason:', Body.stkCallback.ResultDesc || 'Payment failed');
     }
 
   } catch (error) {
     console.error('Callback processing error:', error);
-    res.json({ ResultCode: 1, ResultDesc: 'Error' });
+    if (!res.headersSent) res.json({ ResultCode: 1, ResultDesc: 'Error' });
   }
 });
 
 // Query transaction status
 router.post('/query-status', async (req, res) => {
+  const { checkoutRequestId } = req.body || {};
+  if (!checkoutRequestId) {
+    return res.status(400).json({ error: 'Checkout request ID is required' });
+  }
+
+  // 1. Callback already told us the outcome
+  if (paymentResults.has(checkoutRequestId)) {
+    return res.json(paymentResults.get(checkoutRequestId));
+  }
+
+  // 2. Do not ask Safaricom more than once every 10s per payment
+  const now = Date.now();
+  if (now - (lastQueryAt.get(checkoutRequestId) || 0) < 10000) {
+    return res.json(STILL_PENDING);
+  }
+  lastQueryAt.set(checkoutRequestId, now);
+
   try {
-    const { checkoutRequestId } = req.body;
-
-    if (!checkoutRequestId) {
-      return res.status(400).json({ error: 'Checkout request ID is required' });
-    }
-
     const accessToken = await getMpesaAccessToken();
-    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, -3);
-    
+    const timestamp = new Date().toISOString().replace(/[^0-9]/g, '').slice(0, 14);
     const password = Buffer.from(
       `${MPESA_CONFIG.businessShortcode}${MPESA_CONFIG.passkey}${timestamp}`
     ).toString('base64');
@@ -308,18 +322,22 @@ router.post('/query-status', async (req, res) => {
       Timestamp: timestamp,
       CheckoutRequestID: checkoutRequestId
     }, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
-      }
+      headers: { Authorization: `Bearer ${accessToken}` },
+      timeout: 15000
     });
 
-    res.json(response.data);
-
+    const data = response.data;
+    if (data.ResultCode !== undefined) {
+      data.ResultCode = String(data.ResultCode);
+      if (data.ResultCode !== '1032') paymentResults.set(checkoutRequestId, data);
+    }
+    return res.json(data);
   } catch (error) {
-    console.error('Query status error:', error.message);
-    res.status(500).json({ error: 'Failed to query status' });
+    // Rate limits, dropped connections and "still processing" errors are
+    // temporary: tell the form to keep waiting rather than showing a failure.
+    console.error('Query status (will retry):', error.code || error.message, error.response?.status || '');
+    return res.json(STILL_PENDING);
   }
 });
 
 module.exports = router;
-
