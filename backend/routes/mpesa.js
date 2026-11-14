@@ -216,15 +216,24 @@ router.post('/stk-push', async (req, res) => {
       TransactionDesc: description || 'Donation to Charity DAO'
     };
 
-    console.log('📋 STK Push Request Payload:', JSON.stringify(requestPayload, null, 2));
-    console.log('🔐 Access Token (first 20 chars):', accessToken.substring(0, 20) + '...');
-    console.log('📡 Sending to URL:', url);
-
-    const response = await axios.post(url, requestPayload, {
-      headers: {
-        Authorization: `Bearer ${accessToken}`
+    // Safaricom's sandbox often drops connections ("socket hang up"),
+    // so retry a few times with a timeout before giving up.
+    let response;
+    for (let attempt = 1; attempt <= 3; attempt++) {
+      try {
+        console.log(`📡 STK Push attempt ${attempt}/3`);
+        response = await axios.post(url, requestPayload, {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          timeout: 20000
+        });
+        break;
+      } catch (err) {
+        const retryable = !err.response || err.response.status >= 500;
+        console.error(`⚠️ Attempt ${attempt} failed:`, err.code || err.message, err.response?.status || '');
+        if (!retryable || attempt === 3) throw err;
+        await new Promise(r => setTimeout(r, 1500 * attempt));
       }
-    });
+    }
 
     console.log('✅ STK Push sent successfully');
     console.log('📊 M-Pesa Response:', response.data);
