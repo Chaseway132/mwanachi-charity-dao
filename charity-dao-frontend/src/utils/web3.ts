@@ -20,7 +20,7 @@ export const getProvider = async (forceNew = false) => {
       provider = new ethers.JsonRpcProvider(FALLBACK_RPC_URLS[0]);
     }
   }
-  return provider;
+    return provider as ethers.BrowserProvider;
 };
 
 // Get a fallback provider if MetaMask fails
