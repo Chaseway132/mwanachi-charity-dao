@@ -45,7 +45,7 @@ const DonationFeed: React.FC<DonationFeedProps> = ({ campaignId, limit = 10 }) =
       setTotalRaised(total);
       setLoading(false);
     } catch (error) {
-      console.error('Error fetching donations from:', url, error);
+            console.error('Error fetching donations:', error);
       setLoading(false);
     }
   };
