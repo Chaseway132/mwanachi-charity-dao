@@ -177,8 +177,8 @@ const AppContent: React.FC = () => {
 
       // Get provider and signer
       const provider = await getProvider(true);
+      if (!provider) throw new Error('No wallet provider available');
       const signer = await provider.getSigner();
-      const address = await signer.getAddress();
 
       setWalletAddress(address);
       setConnectedAddress(address);
