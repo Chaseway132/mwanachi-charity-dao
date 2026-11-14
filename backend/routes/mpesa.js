@@ -13,90 +13,49 @@ const MPESA_CONFIG = {
   environment: process.env.MPESA_ENVIRONMENT || 'sandbox'
 };
 
-// Get M-Pesa access token
+// Get M-Pesa access token (cached: Safaricom tokens last ~1 hour, and
+// requesting a new one on every call trips Safaricom's firewall -> 403)
+let cachedToken = null;
+let cachedTokenExpiry = 0;
+
 async function getMpesaAccessToken() {
-  try {
-    console.log('🔐 M-Pesa Config:', {
-      environment: MPESA_CONFIG.environment,
-      hasConsumerKey: !!MPESA_CONFIG.consumerKey,
-      hasConsumerSecret: !!MPESA_CONFIG.consumerSecret,
-      businessShortcode: MPESA_CONFIG.businessShortcode,
-      consumerKeyLength: MPESA_CONFIG.consumerKey?.length || 0,
-      consumerSecretLength: MPESA_CONFIG.consumerSecret?.length || 0
-    });
+  if (cachedToken && Date.now() < cachedTokenExpiry) return cachedToken;
 
-    // Log the actual credentials (first and last few chars only for security)
-    if (MPESA_CONFIG.consumerKey) {
-      const key = MPESA_CONFIG.consumerKey;
-      console.log('🔑 Consumer Key:', key.substring(0, 5) + '...' + key.substring(key.length - 5));
+  const key = (MPESA_CONFIG.consumerKey || '').trim();
+  const secret = (MPESA_CONFIG.consumerSecret || '').trim();
+  if (!key || !secret) throw new Error('M-Pesa credentials not configured');
+
+  const auth = Buffer.from(`${key}:${secret}`).toString('base64');
+  const url = MPESA_CONFIG.environment === 'sandbox'
+    ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
+    : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
+
+  let lastError;
+  for (let attempt = 1; attempt <= 4; attempt++) {
+    try {
+      const response = await axios.get(url, {
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'User-Agent': 'Mozilla/5.0 (compatible; MwananchiDAO/1.0)',
+          Accept: 'application/json'
+        },
+        timeout: 15000
+      });
+      const expiresIn = parseInt(response.data.expires_in, 10) || 3599;
+      cachedToken = response.data.access_token;
+      cachedTokenExpiry = Date.now() + (expiresIn - 120) * 1000;
+      console.log('✅ M-Pesa access token obtained');
+      return cachedToken;
+    } catch (error) {
+      lastError = error;
+      const status = error.response?.status;
+      console.error(`⚠️ Token attempt ${attempt}/4 failed:`, error.code || error.message, status || '');
+      // 400/401 = wrong credentials, no point retrying. 403/5xx/network = firewall or outage, retry.
+      if (status === 400 || status === 401) break;
+      await new Promise(r => setTimeout(r, 2000 * attempt));
     }
-    if (MPESA_CONFIG.consumerSecret) {
-      const secret = MPESA_CONFIG.consumerSecret;
-      console.log('🔑 Consumer Secret:', secret.substring(0, 5) + '...' + secret.substring(secret.length - 5));
-    }
-
-    if (!MPESA_CONFIG.consumerKey || !MPESA_CONFIG.consumerSecret) {
-      console.error('❌ Missing credentials:');
-      console.error('   MPESA_CONSUMER_KEY:', process.env.MPESA_CONSUMER_KEY ? 'SET' : 'NOT SET');
-      console.error('   MPESA_CONSUMER_SECRET:', process.env.MPESA_CONSUMER_SECRET ? 'SET' : 'NOT SET');
-      throw new Error('M-Pesa credentials not configured');
-    }
-
-    const credString = `${MPESA_CONFIG.consumerKey}:${MPESA_CONFIG.consumerSecret}`;
-    console.log('🔑 Credential string length:', credString.length);
-    console.log('🔑 First 20 chars of key:', MPESA_CONFIG.consumerKey.substring(0, 20));
-
-    const auth = Buffer.from(credString).toString('base64');
-    console.log('🔐 Base64 auth header length:', auth.length);
-    console.log('🔐 First 20 chars of auth:', auth.substring(0, 20));
-
-    const url = MPESA_CONFIG.environment === 'sandbox'
-      ? 'https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
-      : 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials';
-
-    console.log('🔗 OAuth URL:', url);
-    console.log('📤 Sending OAuth request...');
-
-    console.log('📡 Making axios request to:', url);
-    console.log('📡 Request headers:', {
-      Authorization: `Basic ${auth.substring(0, 20)}...`
-    });
-
-    // Try without Content-Type header (some APIs don't like it on GET requests)
-    const response = await axios.get(url, {
-      headers: {
-        Authorization: `Basic ${auth}`
-      },
-      timeout: 10000
-    });
-
-    console.log('✅ Access token obtained successfully');
-    console.log('📊 Token response:', {
-      hasAccessToken: !!response.data.access_token,
-      expiresIn: response.data.expires_in,
-      tokenType: response.data.token_type
-    });
-    return response.data.access_token;
-  } catch (error) {
-    console.error('❌ Error getting M-Pesa access token:', error.message);
-    console.error('❌ Status code:', error.response?.status);
-    console.error('❌ Status text:', error.response?.statusText);
-    console.error('❌ Response headers:', error.response?.headers);
-    console.error('❌ Response data:', error.response?.data);
-    console.error('❌ Error code:', error.code);
-    console.error('❌ Error config URL:', error.config?.url);
-
-    // More detailed error info
-    if (error.response?.status === 400) {
-      console.error('⚠️ 400 Bad Request - Possible causes:');
-      console.error('   - Invalid credentials');
-      console.error('   - Malformed request');
-      console.error('   - Safaricom API issue');
-      console.error('   - Sandbox credentials expired');
-    }
-
-    throw error;
   }
+  throw lastError;
 }
 
 // Test endpoint to verify credentials are set
