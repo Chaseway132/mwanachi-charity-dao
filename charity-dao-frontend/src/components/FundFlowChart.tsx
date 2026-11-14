@@ -34,8 +34,8 @@ const FundFlowChart: React.FC<FundFlowChartProps> = ({ campaignId }) => {
   const fetchFundData = async () => {
     try {
       const url = campaignId
-        ? `http://localhost:5000/api/special-donations/${campaignId}`
-        : 'http://localhost:5000/api/donations/stats';
+        ? `https://mwanachi-charity-dao-backend.onrender.com/api/special-donations/${campaignId}`
+        : 'https://mwanachi-charity-dao-backend.onrender.com/api/donations/stats';
 
       const response = await fetch(url);
       const data = await response.json();
