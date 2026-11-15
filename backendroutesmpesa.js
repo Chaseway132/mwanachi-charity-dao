@@ -159,8 +159,7 @@ router.post('/stk-push', async (req, res) => {
       : 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest';
 
     console.log('📤 Sending STK Push to M-Pesa...');
-    console.log('🔗 Callback URL:', `${process.env.BACKEND_URL}/api/mpesa/callback`);
-
+    console.log('🔗 Callback URL: ' + process.env.BACKEND_URL + '/api/mpesa/callback (token hidden)');
     const requestPayload = {
       BusinessShortCode: MPESA_CONFIG.businessShortcode,
       Password: password,
@@ -170,8 +169,7 @@ router.post('/stk-push', async (req, res) => {
       PartyA: formattedPhone,
       PartyB: MPESA_CONFIG.businessShortcode,
       PhoneNumber: formattedPhone,
-      CallBackURL: `${process.env.BACKEND_URL}/api/mpesa/callback`,
-      AccountReference: accountReference || 'Charity-Donation',
+      CallBackURL: `${process.env.BACKEND_URL}/api/mpesa/callback?token=${encodeURIComponent(process.env.MPESA_CALLBACK_SECRET || '')}`,      AccountReference: accountReference || 'Charity-Donation',
       TransactionDesc: description || 'Donation to Charity DAO'
     };
 
@@ -234,6 +232,12 @@ const STILL_PENDING = { ResultCode: '1032', ResultDesc: 'Payment still being pro
 
 router.post('/callback', async (req, res) => {
   try {
+        const expectedToken = process.env.MPESA_CALLBACK_SECRET;
+    if (!expectedToken || req.query.token !== expectedToken) {
+      console.warn('⚠️ Callback rejected: bad or missing token');
+      return res.status(403).json({ ResultCode: 1, ResultDesc: 'Forbidden' });
+    }
+
     const { Body } = req.body;
 
     console.log('M-Pesa Callback received:', JSON.stringify(Body, null, 2));
@@ -270,6 +274,8 @@ router.post('/callback', async (req, res) => {
           mpesaReceiptNumber,
           phoneNumber,
           transactionDate
+          checkoutRequestId: Body.stkCallback.CheckoutRequestID
+
         });
         console.log('✅ Donation recorded successfully:', donation);
       } catch (recordError) {
