@@ -1,4 +1,5 @@
 import { ethers } from 'ethers';
+import './amoyGas';
 
 let provider: ethers.BrowserProvider | null = null;
 
