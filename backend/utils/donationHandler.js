@@ -13,42 +13,71 @@ const donationStore = new Map();
 /**
  * Record M-Pesa donation
  */
+const mongoose = require('mongoose');
+const MpesaDonation = require('../models/MpesaDonation');
+
 async function recordMPesaDonation(paymentData) {
-  try {
-    const {
-      amount,
-      mpesaReceiptNumber,
-      phoneNumber,
-      transactionDate
-    } = paymentData;
+  const {
+    amount,
+    mpesaReceiptNumber,
+    phoneNumber,
+    transactionDate,
+    checkoutRequestId
+  } = paymentData;
 
-    const donationId = `mpesa_${mpesaReceiptNumber}`;
-
-    const donation = {
-      id: donationId,
-      type: 'mpesa',
-      phoneNumber,
-      amount,
-      mpesaReceiptNumber,
-      status: 'confirmed',
-      createdAt: new Date().toISOString(),
-      mpesaTransactionDate: transactionDate,
-      blockchainStatus: 'pending'
-    };
-
-    // Store donation
-    donationStore.set(donationId, donation);
-
-    console.log('✅ M-Pesa donation recorded:', donation);
-
-    // Try to record on blockchain
-    await recordDonationOnBlockchain(donation);
-
-    return donation;
-  } catch (error) {
-    console.error('❌ Error recording M-Pesa donation:', error);
-    throw error;
+  if (!mpesaReceiptNumber) {
+    throw new Error('Missing M-Pesa receipt number');
   }
+
+  const donationId = `mpesa_${mpesaReceiptNumber}`;
+
+  // Safaricom can send the same callback more than once: record it only once
+  if (donationStore.has(donationId)) {
+    return donationStore.get(donationId);
+  }
+
+  const donation = {
+    id: donationId,
+    type: 'mpesa',
+    phoneNumber,
+    amount,
+    mpesaReceiptNumber,
+    status: 'confirmed',
+    createdAt: new Date().toISOString(),
+    mpesaTransactionDate: transactionDate,
+    blockchainStatus: 'not_recorded' // on-chain anchoring of M-Pesa donations is not built yet
+  };
+
+  donationStore.set(donationId, donation);
+
+  // Save permanently in MongoDB (survives Render restarts)
+  if (mongoose.connection.readyState === 1) {
+    try {
+      await MpesaDonation.updateOne(
+        { mpesaReceiptNumber },
+        {
+          $setOnInsert: {
+            mpesaReceiptNumber,
+            checkoutRequestId,
+            phoneNumber: phoneNumber ? String(phoneNumber) : undefined,
+            amount,
+            transactionDate: transactionDate ? String(transactionDate) : undefined,
+            status: 'confirmed',
+            environment: process.env.MPESA_ENVIRONMENT || 'sandbox'
+          }
+        },
+        { upsert: true }
+      );
+      console.log('✅ M-Pesa donation saved to MongoDB:', donationId);
+    } catch (dbError) {
+      console.error('❌ Could not save M-Pesa donation to MongoDB:', dbError.message);
+    }
+  } else {
+    console.warn('⚠️ MongoDB not connected: donation kept in memory only');
+  }
+
+  console.log('✅ M-Pesa donation recorded:', donationId);
+  return donation;
 }
 
 /**
