@@ -248,7 +248,7 @@ router.post('/callback', async (req, res) => {
     // Remember the outcome so /query-status can answer without calling Safaricom
     if (Body && Body.stkCallback && Body.stkCallback.CheckoutRequestID) {
       paymentResults.set(Body.stkCallback.CheckoutRequestID, {
-        ResultCode: String(Body.stkCallback.ResultCode),
+                ResultCode: String(Body.stkCallback.ResultCode) === '1032' ? 'CANCELLED' : String(Body.stkCallback.ResultCode),
         ResultDesc: Body.stkCallback.ResultDesc || ''
       });
     }
@@ -335,7 +335,7 @@ router.post('/query-status', async (req, res) => {
     const data = response.data;
     if (data.ResultCode !== undefined) {
       data.ResultCode = String(data.ResultCode);
-      if (data.ResultCode !== '1032') paymentResults.set(checkoutRequestId, data);
+            if (data.ResultCode !== '1032') paymentResults.set(checkoutRequestId, data);
     }
     return res.json(data);
   } catch (error) {
