@@ -6,12 +6,41 @@ require('dotenv').config();
 const donations = [];
 
 // Get all donations
-router.get('/', (req, res) => {
-  res.json({
-    success: true,
-    count: donations.length,
-    donations: donations
-  });
+// Get all donations
+router.get('/', async (req, res) => {
+  try {
+    const maskPhone = (p) => {
+      const s = String(p || '');
+      return s.length > 6 ? s.slice(0, 5) + '***' + s.slice(-3) : '***';
+    };
+
+    let mpesaRows = [];
+    const mongoose = require('mongoose');
+    if (mongoose.connection.readyState === 1) {
+      const MpesaDonation = require('../models/MpesaDonation');
+      const rows = await MpesaDonation.find().sort({ createdAt: -1 }).limit(200).lean();
+      mpesaRows = rows.map(r => ({
+        id: `mpesa_${r.mpesaReceiptNumber}`,
+        type: 'mpesa',
+        amount: r.amount,
+        mpesaReceiptNumber: r.mpesaReceiptNumber,
+        phoneNumber: maskPhone(r.phoneNumber),
+        status: r.status,
+        createdAt: r.createdAt
+      }));
+    }
+
+    const seen = new Set(mpesaRows.map(r => r.mpesaReceiptNumber));
+    const memoryRows = donations
+      .filter(d => !d.mpesaReceiptNumber || !seen.has(d.mpesaReceiptNumber))
+      .map(d => ({ ...d, phoneNumber: maskPhone(d.phoneNumber) }));
+
+    const all = [...mpesaRows, ...memoryRows];
+    res.json({ success: true, count: all.length, donations: all });
+  } catch (error) {
+    console.error('Error loading donations:', error);
+    res.status(500).json({ error: 'Failed to load donations' });
+  }
 });
 
 // Get donation by ID
