@@ -273,7 +273,7 @@ router.post('/callback', async (req, res) => {
           amount,
           mpesaReceiptNumber,
           phoneNumber,
-          transactionDate
+          transactionDate,
           checkoutRequestId: Body.stkCallback.CheckoutRequestID
 
         });
